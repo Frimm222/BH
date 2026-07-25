@@ -9,11 +9,11 @@ public class PlayerController : MonoBehaviour
     public float rotationSpeed = 10f;
 
     [Header("Рывок (Dash)")]
-    public KeyCode dashKey = KeyCode.LeftShift;    // Клавиша рывка
-    public float dashDistance = 5f;                // Дистанция рывка
-    public float dashDuration = 0.3f;              // Длительность рывка (сек)
-    public float dashCooldown = 1.5f;              // Перезарядка рывка (сек)
-    public float dashSpeedMultiplier = 3f;         // Множитель скорости во время рывка
+    public KeyCode dashKey = KeyCode.LeftShift;
+    public float dashDistance = 5f;
+    public float dashDuration = 0.3f;
+    public float dashCooldown = 1.5f;
+    public float dashSpeedMultiplier = 3f;
 
     [Header("Прицеливание")]
     public KeyCode aimKey = KeyCode.Mouse1;
@@ -22,9 +22,11 @@ public class PlayerController : MonoBehaviour
     [Header("Прыжки")]
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
+    public float airControl = 0.3f; // Контроль в воздухе
 
     [Header("Ссылки")]
     public Transform cameraTransform;
+    public Animator animator;
 
     private CharacterController controller;
     private float verticalVelocity;
@@ -32,8 +34,8 @@ public class PlayerController : MonoBehaviour
     private bool isAiming;
     private Vector3 moveDirection;
     private Vector3 dashDirection;
+    private bool isJumping = false;
 
-    // Состояние рывка
     private bool isDashing = false;
     private float dashTimer = 0f;
     private float dashCooldownTimer = 0f;
@@ -48,33 +50,67 @@ public class PlayerController : MonoBehaviour
         {
             cameraTransform = Camera.main.transform;
         }
+
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
+        }
     }
 
     void Update()
     {
-        // Обновляем таймеры
         if (dashCooldownTimer > 0)
         {
             dashCooldownTimer -= Time.deltaTime;
         }
 
-        // Проверка на земле
+        bool wasGroundedPrevious = isGrounded;
         isGrounded = controller.isGrounded;
+
         if (isGrounded && verticalVelocity < 0)
         {
             verticalVelocity = -2f;
+
+            if (!wasGroundedPrevious && isJumping)
+            {
+                isJumping = false;
+                //animator.SetBool("Jump", false);
+                Debug.Log("Приземлились");
+            }
         }
 
-        // Ввод движения
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-        bool isJumping = Input.GetButtonDown("Jump");
+        bool isJumpingInput = Input.GetButtonDown("Jump");
         bool dashInput = Input.GetKeyDown(dashKey);
 
-        // Переключение прицеливания (удержание ПКМ)
+        // Анимации
+        if (Input.GetKeyDown(KeyCode.W)) animator.SetBool("W", true);
+        if (Input.GetKeyUp(KeyCode.W)) animator.SetBool("W", false);
+
+        if (Input.GetKeyDown(KeyCode.S)) animator.SetBool("S", true);
+        if (Input.GetKeyUp(KeyCode.S)) animator.SetBool("S", false);
+
+        if (Input.GetKeyDown(KeyCode.A)) animator.SetBool("A", true);
+        if (Input.GetKeyUp(KeyCode.A)) animator.SetBool("A", false);
+
+        if (Input.GetKeyDown(KeyCode.D)) animator.SetBool("D", true);
+        if (Input.GetKeyUp(KeyCode.D)) animator.SetBool("D", false);
+
+        //bool isMoving = Mathf.Abs(horizontal) > 0.1f || Mathf.Abs(vertical) > 0.1f;
+        //bool isRunning = isMoving && !isAiming && !isDashing && isGrounded;
+
+        // Базовые параметры
+        //animator.SetBool("IsMoving", isMoving);
+        //animator.SetBool("IsRunning", isRunning);
+        //animator.SetBool("IsAiming", isAiming);
+        //animator.SetBool("IsDashing", isDashing);
+        animator.SetBool("IsGrounded", isGrounded);
+
+
         isAiming = Input.GetKey(aimKey);
 
-        // ========== РАСЧЕТ НАПРАВЛЕНИЯ ДВИЖЕНИЯ ОТ КАМЕРЫ ==========
+        // ========== РАСЧЕТ НАПРАВЛЕНИЯ ДВИЖЕНИЯ ==========
         if (cameraTransform != null)
         {
             Vector3 camForward = cameraTransform.forward;
@@ -93,25 +129,22 @@ public class PlayerController : MonoBehaviour
             moveDirection = new Vector3(horizontal, 0, vertical).normalized;
         }
 
-        // ========== ОБРАБОТКА РЫВКА ==========
-        // Активация рывка (только если не в рывке, перезарядка прошла и персонаж двигается)
+        // ========== РЫВОК ==========
         if (dashInput && !isDashing && dashCooldownTimer <= 0)
         {
             StartDash();
         }
 
-        // Обновление рывка
         if (isDashing)
         {
             UpdateDash();
         }
 
-        // ========== РАСЧЕТ СКОРОСТИ ==========
+        // ========== СКОРОСТЬ ==========
         float currentSpeed = walkSpeed;
 
         if (isDashing)
         {
-            // Во время рывка скорость увеличена
             currentSpeed = runSpeed * dashSpeedMultiplier;
         }
         else if (isAiming)
@@ -128,7 +161,6 @@ public class PlayerController : MonoBehaviour
 
         if (isDashing)
         {
-            // При рывке игнорируем обычное движение - двигаемся строго по направлению рывка
             move = dashDirection * currentSpeed * Time.deltaTime;
         }
         else
@@ -136,10 +168,10 @@ public class PlayerController : MonoBehaviour
             move = moveDirection * currentSpeed * Time.deltaTime;
         }
 
-        // ========== ГРАВИТАЦИЯ И ПРЫЖКИ ==========
-        if (isJumping && isGrounded && !isDashing)
+        // ========== ГРАВИТАЦИЯ ==========
+        if (isJumpingInput && isGrounded && !isDashing && !isJumping)
         {
-            verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            PerformJump();
         }
 
         verticalVelocity += gravity * Time.deltaTime;
@@ -147,28 +179,69 @@ public class PlayerController : MonoBehaviour
 
         controller.Move(move);
 
-        // ========== ПОВОРОТ ПЕРСОНАЖА ==========
-        if (!isDashing && moveDirection.magnitude > 0.1f)
+        // ПОВОРОТ ПЕРСОНАЖА ПО НАПРАВЛЕНИЮ КАМЕРЫ
+
+        if (!isDashing && cameraTransform != null)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+            // Берем направление камеры (без наклона)
+            Vector3 cameraDirection = cameraTransform.forward;
+            cameraDirection.y = 0;
+            cameraDirection.Normalize();
+
+            // Поворачиваем персонажа в направлении камеры
+            if (cameraDirection != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(cameraDirection);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+            }
         }
 
-        // ========== ВИЗУАЛЬНАЯ ОБРАТНАЯ СВЯЗЬ ПРИЦЕЛИВАНИЯ ==========
+        // ========== ПРИЦЕЛИВАНИЕ ==========
         if (isAiming)
         {
             Vector3 aimPosition = transform.position + cameraTransform.forward * 1.5f + Vector3.up * 2f;
             cameraTransform.position = Vector3.Lerp(cameraTransform.position, aimPosition, Time.deltaTime * 5f);
         }
-        else
-        {
-            CameraController camController = cameraTransform?.GetComponent<CameraController>();
-            if (camController != null)
-            {
-                // Контроллер сам обновит позицию
-            }
-        }
+        UpdateJumpAnimations();
     }
+
+    private void PerformJump()
+    {
+        isJumping = true;
+        verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+        // Сигнал для анимации
+        if (animator != null)
+        {
+            animator.SetTrigger("JumpTrigger");
+            //animator.SetBool("Jump", true);
+            //animator.SetBool("IsJumping", true);
+        }
+
+        Debug.Log("Прыжок!");
+    }
+
+    private void UpdateJumpAnimations()
+    {
+        if (animator == null) return;
+
+        // Обновляем состояние прыжка
+        animator.SetBool("IsGrounded", isGrounded);
+
+        // Вертикальная скорость для анимации (для определения пика прыжка)
+        //animator.SetFloat("VerticalVelocity", verticalVelocity);
+
+        // Если в воздухе и не прыгали (например, упали с обрыва)
+        //if (!isGrounded && !isJumping)
+        //{
+        //    animator.SetBool("IsFalling", true);
+        //}
+        //else
+        //{
+        //    animator.SetBool("IsFalling", false);
+        //}
+    }
+
 
     // ========== МЕТОДЫ РЫВКА ==========
 
@@ -178,16 +251,12 @@ public class PlayerController : MonoBehaviour
         dashTimer = 0f;
         dashCooldownTimer = dashCooldown;
 
-        // 🎯 НАПРАВЛЕНИЕ РЫВКА:
-        // 1. Если персонаж двигается - рывок в направлении движения
-        // 2. Если стоит - рывок в направлении взгляда камеры
         if (moveDirection.magnitude > 0.1f)
         {
             dashDirection = moveDirection.normalized;
         }
         else
         {
-            // Рывок вперед от камеры (куда смотрит камера)
             if (cameraTransform != null)
             {
                 Vector3 camForward = cameraTransform.forward;
@@ -201,44 +270,42 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Сохраняем начальную позицию
         dashStartPosition = transform.position;
-
-        // Вычисляем целевую позицию (с учетом препятствий)
         Vector3 targetPos = dashStartPosition + dashDirection * dashDistance;
         dashTargetPosition = targetPos;
 
-        Debug.Log($"Рывок активирован! Направление: {dashDirection}, Дистанция: {Vector3.Distance(dashStartPosition, targetPos)}");
+        //if (animator != null)
+        //{
+        //    animator.SetTrigger("DashTrigger");
+        //}
+
+        Debug.Log($"Рывок активирован! Направление: {dashDirection}");
     }
 
     private void UpdateDash()
     {
         dashTimer += Time.deltaTime;
-
-        // Прогресс рывка (0 -> 1)
         float progress = Mathf.Clamp01(dashTimer / dashDuration);
 
-        // Плавное движение к цели
         Vector3 newPosition = Vector3.Lerp(dashStartPosition, dashTargetPosition, progress);
-
-        // Применяем позицию через CharacterController
         Vector3 movement = newPosition - transform.position;
         controller.Move(movement);
 
-        // Завершаем рывок
         if (progress >= 1f)
         {
             isDashing = false;
+            //if (animator != null)
+            //{
+            //    animator.SetBool("IsDashing", false);
+            //}
             Debug.Log("Рывок завершен");
         }
     }
 
-    // Визуальная индикация готовности рывка (опционально)
     private void OnGUI()
     {
         if (dashCooldownTimer > 0)
         {
-            // Простая индикация перезарядки в левом верхнем углу
             GUI.Label(new Rect(10, 10, 200, 20), $"Dash CD: {dashCooldownTimer:F1}s");
         }
         else
@@ -260,5 +327,9 @@ public class PlayerController : MonoBehaviour
     public bool IsDashing()
     {
         return isDashing;
+    }
+    public bool IsJumping()
+    {
+        return isJumping;
     }
 }
