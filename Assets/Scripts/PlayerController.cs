@@ -183,14 +183,14 @@ public class PlayerController : MonoBehaviour
 
         if (!isDashing && cameraTransform != null)
         {
-            // Берем направление камеры (без наклона)
+            // Берем горизонтальное направление камеры
             Vector3 cameraDirection = cameraTransform.forward;
             cameraDirection.y = 0;
             cameraDirection.Normalize();
 
-            // Поворачиваем персонажа в направлении камеры
             if (cameraDirection != Vector3.zero)
             {
+                // Поворачиваем персонажа
                 Quaternion targetRotation = Quaternion.LookRotation(cameraDirection);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
             }
