@@ -22,7 +22,7 @@ public class PlayerController : MonoBehaviour
     [Header("Прыжки")]
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
-    public float airControl = 0.3f; // Контроль в воздухе
+    public float airControl = 0.3f;
 
     [Header("Ссылки")]
     public Transform cameraTransform;
@@ -35,7 +35,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 moveDirection;
     private Vector3 dashDirection;
     private bool isJumping = false;
-
+    private bool isMovementLocked = false;
     private bool isDashing = false;
     private float dashTimer = 0f;
     private float dashCooldownTimer = 0f;
@@ -74,9 +74,17 @@ public class PlayerController : MonoBehaviour
             if (!wasGroundedPrevious && isJumping)
             {
                 isJumping = false;
-                //animator.SetBool("Jump", false);
-                Debug.Log("Приземлились");
+                if (animator != null)
+                {
+                    animator.SetBool("IsJumping", false);
+                }
             }
+        }
+
+        if (isMovementLocked)
+        {
+            UpdateGravityOnly();
+            return;
         }
 
         float horizontal = Input.GetAxis("Horizontal");
@@ -85,28 +93,7 @@ public class PlayerController : MonoBehaviour
         bool dashInput = Input.GetKeyDown(dashKey);
 
         // Анимации
-        if (Input.GetKeyDown(KeyCode.W)) animator.SetBool("W", true);
-        if (Input.GetKeyUp(KeyCode.W)) animator.SetBool("W", false);
-
-        if (Input.GetKeyDown(KeyCode.S)) animator.SetBool("S", true);
-        if (Input.GetKeyUp(KeyCode.S)) animator.SetBool("S", false);
-
-        if (Input.GetKeyDown(KeyCode.A)) animator.SetBool("A", true);
-        if (Input.GetKeyUp(KeyCode.A)) animator.SetBool("A", false);
-
-        if (Input.GetKeyDown(KeyCode.D)) animator.SetBool("D", true);
-        if (Input.GetKeyUp(KeyCode.D)) animator.SetBool("D", false);
-
-        //bool isMoving = Mathf.Abs(horizontal) > 0.1f || Mathf.Abs(vertical) > 0.1f;
-        //bool isRunning = isMoving && !isAiming && !isDashing && isGrounded;
-
-        // Базовые параметры
-        //animator.SetBool("IsMoving", isMoving);
-        //animator.SetBool("IsRunning", isRunning);
-        //animator.SetBool("IsAiming", isAiming);
-        //animator.SetBool("IsDashing", isDashing);
-        animator.SetBool("IsGrounded", isGrounded);
-
+        UpdateAnimations(horizontal, vertical);
 
         isAiming = Input.GetKey(aimKey);
 
@@ -165,7 +152,15 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            move = moveDirection * currentSpeed * Time.deltaTime;
+            // 🔥 УЛУЧШЕННЫЙ КОНТРОЛЬ В ВОЗДУХЕ
+            if (!isGrounded)
+            {
+                move = moveDirection * currentSpeed * airControl * Time.deltaTime;
+            }
+            else
+            {
+                move = moveDirection * currentSpeed * Time.deltaTime;
+            }
         }
 
         // ========== ГРАВИТАЦИЯ ==========
@@ -179,30 +174,85 @@ public class PlayerController : MonoBehaviour
 
         controller.Move(move);
 
-        // ПОВОРОТ ПЕРСОНАЖА ПО НАПРАВЛЕНИЮ КАМЕРЫ
-
-        if (!isDashing && cameraTransform != null)
+        // ========== ПОВОРОТ ПЕРСОНАЖА ==========
+        // 🔥 ПОВОРАЧИВАЕМ ТОЛЬКО ПРИ ДВИЖЕНИИ (чтобы не дергался)
+        if (!isDashing && moveDirection.magnitude > 0.1f && cameraTransform != null)
         {
-            // Берем горизонтальное направление камеры
             Vector3 cameraDirection = cameraTransform.forward;
             cameraDirection.y = 0;
             cameraDirection.Normalize();
 
             if (cameraDirection != Vector3.zero)
             {
-                // Поворачиваем персонажа
                 Quaternion targetRotation = Quaternion.LookRotation(cameraDirection);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
             }
         }
+    }
 
-        // ========== ПРИЦЕЛИВАНИЕ ==========
-        if (isAiming)
+    void UpdateGravityOnly()
+    {
+        // Только гравитация и прыжки
+        isGrounded = controller.isGrounded;
+        if (isGrounded && verticalVelocity < 0)
         {
-            Vector3 aimPosition = transform.position + cameraTransform.forward * 1.5f + Vector3.up * 2f;
-            cameraTransform.position = Vector3.Lerp(cameraTransform.position, aimPosition, Time.deltaTime * 5f);
+            verticalVelocity = -2f;
         }
-        UpdateJumpAnimations();
+
+        verticalVelocity += gravity * Time.deltaTime;
+        Vector3 move = new Vector3(0, verticalVelocity * Time.deltaTime, 0);
+        controller.Move(move);
+
+        // Сбрасываем анимации движения
+        if (animator != null)
+        {
+            animator.SetBool("IsMoving", false);
+            animator.SetBool("IsRunning", false);
+            animator.SetFloat("Speed", 0f);
+            animator.SetBool("W", false);
+            animator.SetBool("S", false);
+            animator.SetBool("A", false);
+            animator.SetBool("D", false);
+        }
+    }
+    public void SetMovementLocked(bool locked)
+    {
+        isMovementLocked = locked;
+        if (locked)
+        {
+            moveDirection = Vector3.zero;
+        }
+        Debug.Log($"Движение {(locked ? "заблокировано" : "разблокировано")}");
+    }
+
+    public bool IsMovementLocked()
+    {
+        return isMovementLocked;
+    }
+    void UpdateAnimations(float horizontal, float vertical)
+    {
+        if (animator == null) return;
+
+        bool isMoving = Mathf.Abs(horizontal) > 0.1f || Mathf.Abs(vertical) > 0.1f;
+        bool isRunning = isMoving && !isAiming && !isDashing && isGrounded;
+
+        animator.SetBool("IsMoving", isMoving);
+        animator.SetBool("IsRunning", isRunning);
+        animator.SetBool("IsAiming", isAiming);
+        animator.SetBool("IsDashing", isDashing);
+        animator.SetBool("IsGrounded", isGrounded);
+        animator.SetBool("IsJumping", isJumping);
+
+        // Анимации направления (для Blend Tree)
+        animator.SetFloat("Horizontal", horizontal);
+        animator.SetFloat("Vertical", vertical);
+        animator.SetFloat("Speed", isRunning ? 1f : (isMoving ? 0.5f : 0f));
+
+        // Специфичные клавиши
+        animator.SetBool("W", vertical > 0.1f);
+        animator.SetBool("S", vertical < -0.1f);
+        animator.SetBool("A", horizontal < -0.1f);
+        animator.SetBool("D", horizontal > 0.1f);
     }
 
     private void PerformJump()
@@ -210,38 +260,14 @@ public class PlayerController : MonoBehaviour
         isJumping = true;
         verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
-        // Сигнал для анимации
         if (animator != null)
         {
             animator.SetTrigger("JumpTrigger");
-            //animator.SetBool("Jump", true);
-            //animator.SetBool("IsJumping", true);
+            animator.SetBool("IsJumping", true);
         }
 
         Debug.Log("Прыжок!");
     }
-
-    private void UpdateJumpAnimations()
-    {
-        if (animator == null) return;
-
-        // Обновляем состояние прыжка
-        animator.SetBool("IsGrounded", isGrounded);
-
-        // Вертикальная скорость для анимации (для определения пика прыжка)
-        //animator.SetFloat("VerticalVelocity", verticalVelocity);
-
-        // Если в воздухе и не прыгали (например, упали с обрыва)
-        //if (!isGrounded && !isJumping)
-        //{
-        //    animator.SetBool("IsFalling", true);
-        //}
-        //else
-        //{
-        //    animator.SetBool("IsFalling", false);
-        //}
-    }
-
 
     // ========== МЕТОДЫ РЫВКА ==========
 
@@ -274,10 +300,11 @@ public class PlayerController : MonoBehaviour
         Vector3 targetPos = dashStartPosition + dashDirection * dashDistance;
         dashTargetPosition = targetPos;
 
-        //if (animator != null)
-        //{
-        //    animator.SetTrigger("DashTrigger");
-        //}
+        if (animator != null)
+        {
+            animator.SetTrigger("DashTrigger");
+            animator.SetBool("IsDashing", true);
+        }
 
         Debug.Log($"Рывок активирован! Направление: {dashDirection}");
     }
@@ -294,10 +321,10 @@ public class PlayerController : MonoBehaviour
         if (progress >= 1f)
         {
             isDashing = false;
-            //if (animator != null)
-            //{
-            //    animator.SetBool("IsDashing", false);
-            //}
+            if (animator != null)
+            {
+                animator.SetBool("IsDashing", false);
+            }
             Debug.Log("Рывок завершен");
         }
     }
@@ -317,6 +344,11 @@ public class PlayerController : MonoBehaviour
         {
             GUI.Label(new Rect(10, 30, 200, 20), "DASHING!");
         }
+
+        if (isJumping)
+        {
+            GUI.Label(new Rect(10, 50, 200, 20), "JUMPING!");
+        }
     }
 
     public bool IsAiming()
@@ -328,6 +360,7 @@ public class PlayerController : MonoBehaviour
     {
         return isDashing;
     }
+
     public bool IsJumping()
     {
         return isJumping;

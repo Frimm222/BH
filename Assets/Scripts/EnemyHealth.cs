@@ -202,7 +202,8 @@ public class EnemyHealth : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
-
+        var animator = GetComponent<Animator>();
+        animator.SetTrigger("Die");
         Debug.Log("💀 Враг уничтожен! Запускаем растворение...");
 
         // Отключаем всё лишнее

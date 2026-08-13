@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 1034022349269719179}
   - component: {fileID: 4379310147044185575}
   - component: {fileID: 675740164236343998}
-  - component: {fileID: -6264084932613838642}
+  - component: {fileID: 2433712152955666111}
   m_Layer: 0
-  m_Name: Player FireBall
+  m_Name: Player FireBallBig
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 14.05521, y: -1.059, z: -34.09164}
-  m_LocalScale: {x: 0.29289, y: 0.29289, z: 0.29289}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9103669658679677966}
@@ -142,7 +142,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &-6264084932613838642
+--- !u!114 &2433712152955666111
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -151,17 +151,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 323288143739504967}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bf7e7dc3b7a37a41a0fdecf7e6e6571, type: 3}
+  m_Script: {fileID: 11500000, guid: ce43279168a82d445b89756ae01554c9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Fireball
-  speed: 50
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.ParabolicProjectile
+  speed: 40
   lifetime: 5
-  damage: 10
-  explosionRadius: 5
+  damage: 50
+  explosionRadius: 30
   explosionForce: 500
   impactEffect: {fileID: 0}
   trailEffect: {fileID: 0}
-  explosionEffect: {fileID: 1828176872806910, guid: 247f74773f908d64eabc41fabb936a5f, type: 3}
+  explosionEffect: {fileID: 1121192042590650, guid: 95b82f34fab76cd46a78d489ad779cbf, type: 3}
   fireSound: {fileID: 0}
   impactSound: {fileID: 0}
   explosionSound: {fileID: 0}
@@ -179,15 +179,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4209731392266258, guid: a990e3ac1318b834488c784d851f42a9, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4209731392266258, guid: a990e3ac1318b834488c784d851f42a9, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4209731392266258, guid: a990e3ac1318b834488c784d851f42a9, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4209731392266258, guid: a990e3ac1318b834488c784d851f42a9, type: 3}
       propertyPath: m_LocalPosition.x

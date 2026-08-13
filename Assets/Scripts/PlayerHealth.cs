@@ -24,7 +24,8 @@ public class PlayerHealth : MonoBehaviour
     private AudioSource audioSource;
     private float lastDamageTime = 0f;
     private bool isDead = false;
-    
+    private PlayerController playerController;
+
 
     void Start()
     {
@@ -102,6 +103,13 @@ public class PlayerHealth : MonoBehaviour
             animator.SetTrigger("Die");
         }
 
+        if (playerController == null)
+        {
+            playerController = GetComponent<PlayerController>();
+            playerController.SetMovementLocked(true);
+        }
+
+        Destroy(gameObject, 3f); // Уничтожаем игрока через 3 секунды после смерти
         // Здесь можно добавить перезагрузку уровня или экран смерти
         // Application.LoadLevel(Application.loadedLevel);
     }
