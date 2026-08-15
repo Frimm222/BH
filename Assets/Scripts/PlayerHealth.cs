@@ -13,7 +13,7 @@ public class PlayerHealth : MonoBehaviour
 
     [Header("Эффекты")]
     public GameObject deathEffect;
-    public AudioClip hurtSound;
+    public AudioClip[] hurtSound;
     public Animator animator;
 
     [Header("Регенерация")]
@@ -66,7 +66,7 @@ public class PlayerHealth : MonoBehaviour
 
         if (hurtSound != null && audioSource != null)
         {
-            audioSource.PlayOneShot(hurtSound);
+            audioSource.PlayOneShot(hurtSound[Random.Range(0, hurtSound.Length)]);
         }
 
         Debug.Log($"Игрок получил {damage} урона. Осталось: {currentHealth}");
@@ -118,7 +118,7 @@ public class PlayerHealth : MonoBehaviour
     {
         if (healthSlider != null)
         {
-            healthSlider.value = (float)currentHealth / maxHealth;
+            healthSlider.value = (float)currentHealth;
         }
 
         if (healthText != null)

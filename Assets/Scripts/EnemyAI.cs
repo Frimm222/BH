@@ -69,7 +69,7 @@ public class EnemyAI : MonoBehaviour
     private bool isWaiting = false;
     private float lastAttackTime = 0f;
     private bool isAttacking = false;
-    private float attackTimer = 0f;
+    //private float attackTimer = 0f;
     private Vector3 shootDirection;
 
     void Start()

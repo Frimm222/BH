@@ -54,6 +54,7 @@ public class Fireball : MonoBehaviour
             audioSource.PlayOneShot(fireSound, 0.5f);
         }
 
+
         // Автоматическое уничтожение
         Destroy(gameObject, lifetime);
     }
@@ -176,6 +177,8 @@ public class Fireball : MonoBehaviour
         {
             audioSource.PlayOneShot(impactSound, 0.8f);
         }
+
+        gameObject.GetComponent<MeshRenderer>().enabled = false;
 
         Destroy(gameObject, 0.1f);
     }

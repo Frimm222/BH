@@ -203,7 +203,9 @@ public class ParabolicProjectile : MonoBehaviour
             onExplode.Invoke();
         }
 
-        Destroy(gameObject, 0.1f);
+        gameObject.GetComponent<MeshRenderer>().enabled = false;
+
+        Destroy(gameObject, 2.8f);
     }
 
     void SpawnExplosionEffects()

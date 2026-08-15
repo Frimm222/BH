@@ -56,7 +56,7 @@ public class PlayerShooter : MonoBehaviour
     private AudioSource audioSource;
     private Camera playerCamera;
     private bool isAimedShooting = false;
-    private bool isAimingMode = false;
+    //private bool isAimingMode = false;
 
     void Start()
     {

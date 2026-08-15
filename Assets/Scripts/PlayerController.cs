@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     public float dashDuration = 0.3f;
     public float dashCooldown = 1.5f;
     public float dashSpeedMultiplier = 3f;
+    public AudioClip dashSound;
 
     [Header("Прицеливание")]
     public KeyCode aimKey = KeyCode.Mouse1;
@@ -23,12 +24,14 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
     public float airControl = 0.3f;
+    public AudioClip jumpSound;
 
     [Header("Ссылки")]
     public Transform cameraTransform;
     public Animator animator;
 
     private CharacterController controller;
+    private AudioSource audioSource;
     private float verticalVelocity;
     private bool isGrounded;
     private bool isAiming;
@@ -50,11 +53,35 @@ public class PlayerController : MonoBehaviour
         {
             cameraTransform = Camera.main.transform;
         }
-
         if (animator == null)
         {
             animator = GetComponent<Animator>();
         }
+
+        // 🔥 НАСТРАИВАЕМ AUDIO SOURCE
+        SetupAudioSource();
+    }
+
+    void SetupAudioSource()
+    {
+        // Пытаемся получить существующий AudioSource
+        audioSource = GetComponent<AudioSource>();
+
+        // Если нет - создаем новый
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            Debug.Log("Добавлен AudioSource на игрока");
+        }
+
+        // Настраиваем AudioSource
+        audioSource.spatialBlend = 1f;        // 3D звук
+        audioSource.dopplerLevel = 0f;        // Отключаем доплер
+        audioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+        audioSource.maxDistance = 20f;
+        audioSource.volume = 1f;
+
+        Debug.Log("AudioSource настроен!");
     }
 
     void Update()
@@ -92,7 +119,6 @@ public class PlayerController : MonoBehaviour
         bool isJumpingInput = Input.GetButtonDown("Jump");
         bool dashInput = Input.GetKeyDown(dashKey);
 
-        // Анимации
         UpdateAnimations(horizontal, vertical);
 
         isAiming = Input.GetKey(aimKey);
@@ -152,7 +178,6 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // 🔥 УЛУЧШЕННЫЙ КОНТРОЛЬ В ВОЗДУХЕ
             if (!isGrounded)
             {
                 move = moveDirection * currentSpeed * airControl * Time.deltaTime;
@@ -175,7 +200,6 @@ public class PlayerController : MonoBehaviour
         controller.Move(move);
 
         // ========== ПОВОРОТ ПЕРСОНАЖА ==========
-        // 🔥 ПОВОРАЧИВАЕМ ТОЛЬКО ПРИ ДВИЖЕНИИ (чтобы не дергался)
         if (!isDashing && moveDirection.magnitude > 0.1f && cameraTransform != null)
         {
             Vector3 cameraDirection = cameraTransform.forward;
@@ -192,7 +216,6 @@ public class PlayerController : MonoBehaviour
 
     void UpdateGravityOnly()
     {
-        // Только гравитация и прыжки
         isGrounded = controller.isGrounded;
         if (isGrounded && verticalVelocity < 0)
         {
@@ -203,7 +226,6 @@ public class PlayerController : MonoBehaviour
         Vector3 move = new Vector3(0, verticalVelocity * Time.deltaTime, 0);
         controller.Move(move);
 
-        // Сбрасываем анимации движения
         if (animator != null)
         {
             animator.SetBool("IsMoving", false);
@@ -215,6 +237,7 @@ public class PlayerController : MonoBehaviour
             animator.SetBool("D", false);
         }
     }
+
     public void SetMovementLocked(bool locked)
     {
         isMovementLocked = locked;
@@ -229,6 +252,7 @@ public class PlayerController : MonoBehaviour
     {
         return isMovementLocked;
     }
+
     void UpdateAnimations(float horizontal, float vertical)
     {
         if (animator == null) return;
@@ -243,12 +267,10 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("IsGrounded", isGrounded);
         animator.SetBool("IsJumping", isJumping);
 
-        // Анимации направления (для Blend Tree)
-        animator.SetFloat("Horizontal", horizontal);
-        animator.SetFloat("Vertical", vertical);
-        animator.SetFloat("Speed", isRunning ? 1f : (isMoving ? 0.5f : 0f));
+        //animator.SetFloat("Horizontal", horizontal);
+        //animator.SetFloat("Vertical", vertical);
+        //animator.SetFloat("Speed", isRunning ? 1f : (isMoving ? 0.5f : 0f));
 
-        // Специфичные клавиши
         animator.SetBool("W", vertical > 0.1f);
         animator.SetBool("S", vertical < -0.1f);
         animator.SetBool("A", horizontal < -0.1f);
@@ -265,6 +287,9 @@ public class PlayerController : MonoBehaviour
             animator.SetTrigger("JumpTrigger");
             animator.SetBool("IsJumping", true);
         }
+
+        // 🔥 ВОСПРОИЗВОДИМ ЗВУК ПРЫЖКА
+        PlaySound(jumpSound);
 
         Debug.Log("Прыжок!");
     }
@@ -306,6 +331,9 @@ public class PlayerController : MonoBehaviour
             animator.SetBool("IsDashing", true);
         }
 
+        // 🔥 ВОСПРОИЗВОДИМ ЗВУК РЫВКА
+        PlaySound(dashSound);
+
         Debug.Log($"Рывок активирован! Направление: {dashDirection}");
     }
 
@@ -329,26 +357,52 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // 🔥 НОВЫЙ МЕТОД ДЛЯ ВОСПРОИЗВЕДЕНИЯ ЗВУКОВ
+    private void PlaySound(AudioClip clip)
+    {
+        if (clip == null)
+        {
+            Debug.LogWarning($"Звук не назначен!");
+            return;
+        }
+
+        if (audioSource == null)
+        {
+            Debug.LogError("AudioSource не найден!");
+            return;
+        }
+
+        audioSource.PlayOneShot(clip);
+        Debug.Log($"Воспроизведен звук: {clip.name}");
+    }
+
     private void OnGUI()
     {
+        GUIStyle style = new GUIStyle();
+        style.fontSize = 16;
+        style.normal.textColor = Color.white;
+
         if (dashCooldownTimer > 0)
         {
-            GUI.Label(new Rect(10, 10, 200, 20), $"Dash CD: {dashCooldownTimer:F1}s");
+            GUI.Label(new Rect(10, 10, 200, 30), $"Dash CD: {dashCooldownTimer:F1}s", style);
         }
         else
         {
-            GUI.Label(new Rect(10, 10, 200, 20), "Dash READY! (Shift)");
+            GUI.Label(new Rect(10, 10, 200, 30), "Dash READY! (Shift)", style);
         }
 
         if (isDashing)
         {
-            GUI.Label(new Rect(10, 30, 200, 20), "DASHING!");
+            GUI.Label(new Rect(10, 40, 200, 30), "DASHING!", style);
         }
 
         if (isJumping)
         {
-            GUI.Label(new Rect(10, 50, 200, 20), "JUMPING!");
+            GUI.Label(new Rect(10, 70, 200, 30), "JUMPING!", style);
         }
+
+        // Отладка AudioSource
+        GUI.Label(new Rect(10, 100, 300, 30), $"AudioSource: {(audioSource != null ? "✅" : "❌")}", style);
     }
 
     public bool IsAiming()
