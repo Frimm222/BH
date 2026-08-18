@@ -18,6 +18,7 @@ public class EnemyFireball : MonoBehaviour
     public AudioClip fireSound;
     public AudioClip impactSound;
     public AudioClip explosionSound;
+    public float explosionSoundMaxDistance = 50f;
 
     private Vector3 direction;
     private AudioSource audioSource;
@@ -27,13 +28,8 @@ public class EnemyFireball : MonoBehaviour
 
     void Start()
     {
-        audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-        }
+        SetupAudioSource();
 
-        // 🔥 НАСТРАИВАЕМ КОЛЛАЙДЕР
         sphereCollider = GetComponent<SphereCollider>();
         if (sphereCollider == null)
         {
@@ -42,109 +38,84 @@ public class EnemyFireball : MonoBehaviour
             sphereCollider.isTrigger = true;
         }
 
-        // 🔥 ДОБАВЛЯЕМ RIGIDBODY ДЛЯ КОРРЕКТНЫХ СТОЛКНОВЕНИЙ
         rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
             rb = gameObject.AddComponent<Rigidbody>();
             rb.useGravity = false;
-            rb.isKinematic = true; // Кинематический, чтобы двигать вручную
+            rb.isKinematic = true;
         }
 
-        // Эффект следа
         if (trailEffect != null)
         {
             GameObject trail = Instantiate(trailEffect, transform.position, transform.rotation, transform);
             Destroy(trail, lifetime);
         }
 
-        // Звук выстрела
-        if (fireSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(fireSound, 0.5f);
-        }
+        PlaySoundAtPosition(fireSound, transform.position, 0.5f, 20f);
 
-        // Автоматическое уничтожение
         Destroy(gameObject, lifetime);
+    }
+
+    void SetupAudioSource()
+    {
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.spatialBlend = 1f;
+        audioSource.dopplerLevel = 0f;
+        audioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+        audioSource.maxDistance = explosionSoundMaxDistance;
+        audioSource.minDistance = 1f;
+        audioSource.volume = 1f;
+        audioSource.playOnAwake = false;
     }
 
     void Update()
     {
         if (hasExploded) return;
 
-        // Движение
-        Vector3 moveDelta = direction * speed * Time.deltaTime;
-        transform.position += moveDelta;
+        transform.position += direction * speed * Time.deltaTime;
 
-        // Поворот
         if (direction != Vector3.zero)
         {
             transform.rotation = Quaternion.LookRotation(direction);
         }
 
-        // 🔥 ПРОВЕРКА СТОЛКНОВЕНИЙ ЧЕРЕЗ RAYCAST
-        CheckCollisions();
+        CheckForTerrainCollision();
     }
 
-    // 🔥 МЕТОД ДЛЯ ПРОВЕРКИ СТОЛКНОВЕНИЙ
-    void CheckCollisions()
+    void CheckForTerrainCollision()
     {
         if (hasExploded) return;
 
-        // Создаем луч от текущей позиции в направлении движения
         Ray ray = new Ray(transform.position, direction);
         RaycastHit hit;
-
-        // Проверяем на расстояние, которое пролетим за кадр + небольшой запас
         float checkDistance = speed * Time.deltaTime * 1.5f;
 
-        // 🔥 ПРОВЕРЯЕМ ВСЕ ОБЪЕКТЫ
         if (Physics.Raycast(ray, out hit, checkDistance))
         {
-            // Проверяем, что это не сам файрбол
             if (hit.collider.gameObject == gameObject) return;
-
-            // Проверяем, что это не триггер (игнорируем триггеры)
             if (hit.collider.isTrigger) return;
 
-            // 🔥 ПРОВЕРЯЕМ ЧТО ЭТО TERRAIN ИЛИ ИГРОК
             bool isTerrain = hit.collider.CompareTag("Terrain") ||
                             hit.collider.CompareTag("Ground") ||
                             hit.collider.GetComponent<Terrain>() != null;
 
             bool isPlayer = hit.collider.CompareTag("Player");
+            bool isEnemy = hit.collider.CompareTag("Enemy");
 
-            // Если это Terrain или Player - взрываемся
-            if (isTerrain || isPlayer)
+            if (isTerrain || isPlayer || isEnemy)
             {
-                Debug.Log($"EnemyFireball попал в: {hit.collider.gameObject.name}, тег: {hit.collider.tag}");
-
-                // Если это игрок - наносим урон
-                //if (isPlayer)
-                //{
-                //    PlayerHealth playerHealth = hit.collider.GetComponent<PlayerHealth>();
-                //    if (playerHealth != null)
-                //    {
-                //        playerHealth.TakeDamage(damage);
-                //        Debug.Log($"EnemyFireball нанес {damage} урона игроку!");
-                //    }
-                //}
-
                 ExplodeAtPosition(hit.point);
             }
         }
     }
 
-    // 🔥 ПРОВЕРКА ЧЕРЕЗ TRIGGER (для объектов с коллайдерами)
     void OnTriggerEnter(Collider other)
     {
         if (hasExploded) return;
         if (other.isTrigger) return;
-
-        // Проверяем, что это не сам файрбол
         if (other.gameObject == gameObject) return;
 
-        // Проверяем на Terrain
         bool isTerrain = other.CompareTag("Terrain") ||
                         other.CompareTag("Ground") ||
                         other.GetComponent<Terrain>() != null;
@@ -153,31 +124,15 @@ public class EnemyFireball : MonoBehaviour
 
         if (isTerrain || isPlayer)
         {
-            Debug.Log($"EnemyFireball Trigger с: {other.gameObject.name}, тег: {other.tag}");
-
-            //if (isPlayer)
-            //{
-            //    PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
-            //    if (playerHealth != null)
-            //    {
-            //        playerHealth.TakeDamage(damage);
-            //        Debug.Log($"EnemyFireball нанес {damage} урона игроку!");
-            //    }
-            //}
-
             ExplodeAtPosition(transform.position);
         }
     }
 
-    // 🔥 ПРОВЕРКА ЧЕРЕЗ COLLISION (для физических столкновений)
     void OnCollisionEnter(Collision collision)
     {
         if (hasExploded) return;
-
-        // Проверяем, что это не сам файрбол
         if (collision.gameObject == gameObject) return;
 
-        // Проверяем на Terrain
         bool isTerrain = collision.gameObject.CompareTag("Terrain") ||
                         collision.gameObject.CompareTag("Ground") ||
                         collision.gameObject.GetComponent<Terrain>() != null;
@@ -186,18 +141,6 @@ public class EnemyFireball : MonoBehaviour
 
         if (isTerrain || isPlayer)
         {
-            Debug.Log($"EnemyFireball Collision с: {collision.gameObject.name}, тег: {collision.gameObject.tag}");
-
-            if (isPlayer)
-            {
-                PlayerHealth playerHealth = collision.gameObject.GetComponent<PlayerHealth>();
-                if (playerHealth != null)
-                {
-                    playerHealth.TakeDamage(damage);
-                    Debug.Log($"EnemyFireball нанес {damage} урона игроку!");
-                }
-            }
-
             ExplodeAtPosition(collision.contacts[0].point);
         }
     }
@@ -207,9 +150,6 @@ public class EnemyFireball : MonoBehaviour
         if (hasExploded) return;
         hasExploded = true;
 
-        Debug.Log($"EnemyFireball взорвался в: {explosionPosition}");
-
-        // Наносим урон игроку в радиусе
         if (explosionRadius > 0)
         {
             Collider[] hitColliders = Physics.OverlapSphere(explosionPosition, explosionRadius);
@@ -218,15 +158,12 @@ public class EnemyFireball : MonoBehaviour
             {
                 if (hitCollider.transform == transform) continue;
 
-                // Наносим урон игроку
                 PlayerHealth player = hitCollider.GetComponent<PlayerHealth>();
                 if (player != null)
                 {
                     player.TakeDamage(damage);
-                    Debug.Log($"Взрыв нанес {damage} урона игроку!");
                 }
 
-                // Отбрасывание объектов
                 Rigidbody rbTarget = hitCollider.GetComponent<Rigidbody>();
                 if (rbTarget != null)
                 {
@@ -236,20 +173,32 @@ public class EnemyFireball : MonoBehaviour
             }
         }
 
-        // Визуальные эффекты
+        PlaySoundAtPosition(explosionSound, explosionPosition, 1f, explosionSoundMaxDistance);
+        PlaySoundAtPosition(impactSound, explosionPosition, 0.8f, 30f);
+
         SpawnExplosionEffects(explosionPosition);
 
-        // Звук
-        if (explosionSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(explosionSound, 1f);
-        }
-        else if (impactSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(impactSound, 0.8f);
-        }
-
         Destroy(gameObject, 0.1f);
+    }
+
+    void PlaySoundAtPosition(AudioClip clip, Vector3 position, float volume = 1f, float maxDistance = 50f)
+    {
+        if (clip == null) return;
+
+        GameObject soundObject = new GameObject($"3D_Sound_{clip.name}");
+        soundObject.transform.position = position;
+
+        AudioSource tempAudio = soundObject.AddComponent<AudioSource>();
+        tempAudio.clip = clip;
+        tempAudio.volume = volume;
+        tempAudio.spatialBlend = 1f;
+        tempAudio.dopplerLevel = 0f;
+        tempAudio.rolloffMode = AudioRolloffMode.Logarithmic;
+        tempAudio.maxDistance = maxDistance;
+        tempAudio.minDistance = 1f;
+        tempAudio.Play();
+
+        Destroy(soundObject, clip.length + 0.5f);
     }
 
     void SpawnExplosionEffects(Vector3 position)

@@ -1,13 +1,13 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AI;
 
-public class FootstepSystem : MonoBehaviour
+public class EnemyFootstepSystem : MonoBehaviour
 {
     [Header("Настройки звуков")]
     public AudioSource footstepAudioSource;
-    public float stepInterval = 0.5f;           // Интервал между шагами при ходьбе
-    public float runStepInterval = 0.3f;        // Интервал между шагами при беге
-    public float sprintStepInterval = 0.2f;     // Интервал между шагами при спринте
+    public float stepInterval = 0.6f;           // Интервал между шагами при ходьбе
+    public float chaseStepInterval = 0.4f;      // Интервал между шагами при преследовании
 
     [Header("Surface Detection")]
     public float raycastDistance = 1.5f;
@@ -16,19 +16,30 @@ public class FootstepSystem : MonoBehaviour
     [Header("Surface Sounds")]
     public SurfaceSoundList[] surfaceSounds;
 
-    private PlayerController playerController;
+    [Header("Настройки громкости")]
+    [Range(0f, 2f)]
+    public float footstepVolume = 0.5f;
+    [Range(0f, 2f)]
+    public float pitchMin = 0.9f;
+    [Range(0f, 2f)]
+    public float pitchMax = 1.1f;
+    public float soundMaxDistance = 20f;
+
+    private EnemyAI enemyAI;
+    private NavMeshAgent agent;
     private CharacterController characterController;
+    private Animator animator;
     private float stepTimer = 0f;
     private bool isGrounded = false;
     private int lastPlayedIndex = -1;
-    private bool hasPlayedLandingSound = false;
+    private bool isMoving = false;
+    private bool isChasing = false;
 
     [System.Serializable]
     public class SurfaceSoundList
     {
         public string surfaceTag = "Default";
         public AudioClip[] footstepClips;
-        public AudioClip landingClip;           // Звук приземления
         public float volumeMultiplier = 1f;
         public float pitchMin = 0.9f;
         public float pitchMax = 1.1f;
@@ -36,9 +47,22 @@ public class FootstepSystem : MonoBehaviour
 
     void Start()
     {
-        playerController = GetComponent<PlayerController>();
+        enemyAI = GetComponent<EnemyAI>();
+        agent = GetComponent<NavMeshAgent>();
         characterController = GetComponent<CharacterController>();
+        animator = GetComponent<Animator>();
 
+        SetupAudioSource();
+
+        if (surfaceSounds.Length == 0)
+        {
+            Debug.LogWarning("No surface sounds configured! Adding default surfaces.");
+            AddDefaultSurfaces();
+        }
+    }
+
+    void SetupAudioSource()
+    {
         if (footstepAudioSource == null)
         {
             footstepAudioSource = GetComponent<AudioSource>();
@@ -48,123 +72,88 @@ public class FootstepSystem : MonoBehaviour
             }
         }
 
-        // Настраиваем AudioSource для шагов
+        // Настраиваем AudioSource для 3D звука
         footstepAudioSource.spatialBlend = 1f;
         footstepAudioSource.dopplerLevel = 0f;
         footstepAudioSource.rolloffMode = AudioRolloffMode.Logarithmic;
-        footstepAudioSource.maxDistance = 15f;
-        footstepAudioSource.volume = 0.5f;
+        footstepAudioSource.maxDistance = soundMaxDistance;
+        footstepAudioSource.minDistance = 1f;
+        footstepAudioSource.volume = footstepVolume;
         footstepAudioSource.pitch = 1f;
-
-        // Проверяем наличие поверхностей
-        if (surfaceSounds.Length == 0)
-        {
-            Debug.LogWarning("No surface sounds configured! Adding default surfaces.");
-            AddDefaultSurfaces();
-        }
     }
 
     void AddDefaultSurfaces()
     {
         List<SurfaceSoundList> surfaces = new List<SurfaceSoundList>();
 
-        // Default
         SurfaceSoundList defaultSurface = new SurfaceSoundList();
         defaultSurface.surfaceTag = "Default";
         defaultSurface.footstepClips = new AudioClip[0];
         surfaces.Add(defaultSurface);
 
-        // Terrain
         SurfaceSoundList terrainSurface = new SurfaceSoundList();
         terrainSurface.surfaceTag = "Terrain";
         terrainSurface.footstepClips = new AudioClip[0];
         surfaces.Add(terrainSurface);
 
-        // Ground
         SurfaceSoundList groundSurface = new SurfaceSoundList();
         groundSurface.surfaceTag = "Ground";
         groundSurface.footstepClips = new AudioClip[0];
         surfaces.Add(groundSurface);
 
-        // Grass
         SurfaceSoundList grassSurface = new SurfaceSoundList();
         grassSurface.surfaceTag = "Grass";
         grassSurface.footstepClips = new AudioClip[0];
         surfaces.Add(grassSurface);
 
-        // Wood
         SurfaceSoundList woodSurface = new SurfaceSoundList();
         woodSurface.surfaceTag = "Wood";
         woodSurface.footstepClips = new AudioClip[0];
         surfaces.Add(woodSurface);
 
-        // Stone
         SurfaceSoundList stoneSurface = new SurfaceSoundList();
         stoneSurface.surfaceTag = "Stone";
         stoneSurface.footstepClips = new AudioClip[0];
         surfaces.Add(stoneSurface);
 
-        // Metal
         SurfaceSoundList metalSurface = new SurfaceSoundList();
         metalSurface.surfaceTag = "Metal";
         metalSurface.footstepClips = new AudioClip[0];
         surfaces.Add(metalSurface);
 
         surfaceSounds = surfaces.ToArray();
-        Debug.Log("Added default surfaces to FootstepSystem");
+        Debug.Log("Added default surfaces to EnemyFootstepSystem");
     }
 
     void Update()
     {
-        if (playerController == null || characterController == null) return;
+        if (enemyAI == null) return;
 
-        // 🔥 ИСПОЛЬЗУЕМ ПУБЛИЧНЫЕ МЕТОДЫ ИЗ PLAYER CONTROLLER
-        bool wasGrounded = isGrounded;
-        isGrounded = characterController.isGrounded;
+        // Проверяем, жив ли враг
+        if (enemyAI.IsDead()) return;
 
-        // Проверяем приземление
-        if (isGrounded && !wasGrounded && !hasPlayedLandingSound)
+        // Проверяем grounded (если есть CharacterController)
+        if (characterController != null)
         {
-            PlayLandingSound();
-            hasPlayedLandingSound = true;
+            isGrounded = characterController.isGrounded;
+        }
+        else
+        {
+            isGrounded = true; // Если нет CharacterController, считаем что на земле
         }
 
-        if (!isGrounded)
-        {
-            hasPlayedLandingSound = false;
-            stepTimer = 0f;
-            return;
-        }
+        // Определяем состояние движения
+        UpdateMovementState();
 
-        // 🔥 ОПРЕДЕЛЯЕМ СОСТОЯНИЕ ДВИЖЕНИЯ
-        bool isMoving = false;
-        bool isRunning = false;
-        bool isSprinting = false;
-
-        // Получаем состояние из PlayerController
-        isMoving = Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0;
-        isRunning = isMoving && !playerController.IsAiming() && !playerController.IsDashing() && isGrounded;
-        isSprinting = isRunning && Input.GetKey(KeyCode.LeftShift);
-
-        // Если не двигаемся - сбрасываем таймер
-        if (!isMoving)
+        if (!isGrounded || !isMoving)
         {
             stepTimer = 0f;
             return;
         }
 
-        // Определяем интервал шагов
-        float currentInterval = stepInterval;
-        if (isSprinting)
-        {
-            currentInterval = sprintStepInterval;
-        }
-        else if (isRunning)
-        {
-            currentInterval = runStepInterval;
-        }
+        // Выбираем интервал в зависимости от состояния
+        float currentInterval = isChasing ? chaseStepInterval : stepInterval;
 
-        // Обновляем таймер и воспроизводим шаг
         stepTimer += Time.deltaTime;
 
         if (stepTimer >= currentInterval)
@@ -174,12 +163,33 @@ public class FootstepSystem : MonoBehaviour
         }
     }
 
+    void UpdateMovementState()
+    {
+        // Определяем движется ли враг
+        if (agent != null)
+        {
+            isMoving = agent.velocity.magnitude > 0.1f;
+        }
+        else if (animator != null)
+        {
+            isMoving = animator.GetBool("IsMoving");
+        }
+        else
+        {
+            isMoving = false;
+        }
+
+        // Определяем преследует ли враг
+        if (animator != null)
+        {
+            isChasing = animator.GetBool("IsChasing");
+        }
+    }
+
     void PlayFootstep()
     {
-        // Определяем поверхность под ногами
         string surfaceTag = DetectSurface();
 
-        // Находим звуки для этой поверхности
         AudioClip clip = GetRandomClipForSurface(surfaceTag);
 
         if (clip == null)
@@ -195,23 +205,6 @@ public class FootstepSystem : MonoBehaviour
         PlayFootstepSound(clip, surfaceTag);
     }
 
-    void PlayLandingSound()
-    {
-        string surfaceTag = DetectSurface();
-        AudioClip clip = GetLandingClipForSurface(surfaceTag);
-
-        if (clip == null)
-        {
-            clip = GetLandingClipForSurface("Default");
-        }
-
-        if (clip != null)
-        {
-            PlayFootstepSound(clip, surfaceTag, true);
-            Debug.Log($"Landing sound: {clip.name} on {surfaceTag}");
-        }
-    }
-
     string DetectSurface()
     {
         if (characterController == null) return "Default";
@@ -221,13 +214,11 @@ public class FootstepSystem : MonoBehaviour
 
         if (Physics.Raycast(rayOrigin, Vector3.down, out hit, raycastDistance, groundLayerMask))
         {
-            // Проверяем тег
             if (!string.IsNullOrEmpty(hit.collider.tag))
             {
                 return hit.collider.tag;
             }
 
-            // Проверяем имя объекта
             string objectName = hit.collider.gameObject.name.ToLower();
             if (objectName.Contains("grass")) return "Grass";
             if (objectName.Contains("wood")) return "Wood";
@@ -268,61 +259,46 @@ public class FootstepSystem : MonoBehaviour
         return null;
     }
 
-    AudioClip GetLandingClipForSurface(string surfaceTag)
-    {
-        foreach (SurfaceSoundList surface in surfaceSounds)
-        {
-            if (surface.surfaceTag == surfaceTag)
-            {
-                return surface.landingClip;
-            }
-        }
-
-        return null;
-    }
-
-    void PlayFootstepSound(AudioClip clip, string surfaceTag, bool isLanding = false)
+    void PlayFootstepSound(AudioClip clip, string surfaceTag)
     {
         if (clip == null || footstepAudioSource == null) return;
 
         // Находим настройки поверхности
-        float volume = 0.5f;
-        float pitchMin = 0.9f;
-        float pitchMax = 1.1f;
+        float volume = footstepVolume;
+        float pitchMinLocal = pitchMin;
+        float pitchMaxLocal = pitchMax;
 
         foreach (SurfaceSoundList surface in surfaceSounds)
         {
             if (surface.surfaceTag == surfaceTag)
             {
-                volume = surface.volumeMultiplier;
-                pitchMin = surface.pitchMin;
-                pitchMax = surface.pitchMax;
+                volume = footstepVolume * surface.volumeMultiplier;
+                pitchMinLocal = surface.pitchMin;
+                pitchMaxLocal = surface.pitchMax;
                 break;
             }
         }
 
-        // Для приземления делаем громче и ниже
-        if (isLanding)
+        // Если преследует - делаем шаги громче и быстрее
+        if (isChasing)
         {
             volume *= 1.2f;
-            pitchMin *= 0.9f;
-            pitchMax *= 0.9f;
+            pitchMinLocal *= 1.05f;
+            pitchMaxLocal *= 1.05f;
         }
 
         footstepAudioSource.volume = Mathf.Clamp01(volume * Random.Range(0.8f, 1.2f));
-        footstepAudioSource.pitch = Random.Range(pitchMin, pitchMax);
+        footstepAudioSource.pitch = Random.Range(pitchMinLocal, pitchMaxLocal);
         footstepAudioSource.PlayOneShot(clip);
     }
 
-    // Метод для добавления новой поверхности
-    public void AddSurface(string tag, AudioClip[] clips, AudioClip landingClip = null, float volume = 1f, float pitchMin = 0.9f, float pitchMax = 1.1f)
+    public void AddSurface(string tag, AudioClip[] clips, float volume = 1f, float pitchMin = 0.9f, float pitchMax = 1.1f)
     {
         List<SurfaceSoundList> surfaces = new List<SurfaceSoundList>(surfaceSounds);
 
         SurfaceSoundList newSurface = new SurfaceSoundList();
         newSurface.surfaceTag = tag;
         newSurface.footstepClips = clips;
-        newSurface.landingClip = landingClip;
         newSurface.volumeMultiplier = volume;
         newSurface.pitchMin = pitchMin;
         newSurface.pitchMax = pitchMax;
@@ -336,5 +312,8 @@ public class FootstepSystem : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawRay(transform.position + Vector3.up * 0.5f, Vector3.down * raycastDistance);
         Gizmos.DrawWireSphere(transform.position - Vector3.up * (raycastDistance - 0.5f), 0.2f);
+
+        Gizmos.color = new Color(0, 1, 0, 0.2f);
+        Gizmos.DrawWireSphere(transform.position, soundMaxDistance);
     }
 }

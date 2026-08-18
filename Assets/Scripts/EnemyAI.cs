@@ -4,12 +4,12 @@ using UnityEngine.AI;
 public class EnemyAI : MonoBehaviour
 {
     [Header("Тип врага")]
-    public EnemyType enemyType = EnemyType.Melee; // Melee или Ranged
+    public EnemyType enemyType = EnemyType.Melee;
 
     public enum EnemyType
     {
-        Melee,   // Ближний бой
-        Ranged   // Дальний бой (стреляет файрболами)
+        Melee,
+        Ranged
     }
 
     [Header("Настройки движения")]
@@ -45,6 +45,21 @@ public class EnemyAI : MonoBehaviour
     public AudioClip attackSound;
     public AudioClip shootSound;
 
+    [Header("Настройки звука")]
+    [Range(0f, 3f)]
+    public float hitSoundVolume = 0.8f;
+    [Range(0f, 3f)]
+    public float deathSoundVolume = 1f;
+    [Range(0f, 3f)]
+    public float attackSoundVolume = 1f;
+    [Range(0f, 3f)]
+    public float shootSoundVolume = 0.7f;
+    [Range(0f, 2f)]
+    public float pitchMin = 0.9f;
+    [Range(0f, 2f)]
+    public float pitchMax = 1.1f;
+    public float soundMaxDistance = 30f;
+
     [Header("Ссылки")]
     public Transform player;
     public Animator animator;
@@ -69,7 +84,6 @@ public class EnemyAI : MonoBehaviour
     private bool isWaiting = false;
     private float lastAttackTime = 0f;
     private bool isAttacking = false;
-    //private float attackTimer = 0f;
     private Vector3 shootDirection;
 
     void Start()
@@ -96,6 +110,14 @@ public class EnemyAI : MonoBehaviour
             audioSource = gameObject.AddComponent<AudioSource>();
         }
 
+        // 🔥 НАСТРАИВАЕМ AUDIO SOURCE ДЛЯ 3D ЗВУКА
+        audioSource.spatialBlend = 1f;
+        audioSource.dopplerLevel = 0f;
+        audioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+        audioSource.maxDistance = soundMaxDistance;
+        audioSource.minDistance = 1f;
+        audioSource.volume = 1f;
+
         if (agent != null)
         {
             agent.speed = moveSpeed;
@@ -116,7 +138,6 @@ public class EnemyAI : MonoBehaviour
             health.OnDeath += Die;
         }
 
-        // Настройка точки выстрела для Ranged врага
         if (enemyType == EnemyType.Ranged && firePoint == null)
         {
             firePoint = new GameObject("FirePoint").transform;
@@ -124,7 +145,6 @@ public class EnemyAI : MonoBehaviour
             firePoint.localPosition = new Vector3(0, 1.5f, 0.5f);
         }
 
-        // Для Ranged врага - увеличиваем stoppingDistance
         if (enemyType == EnemyType.Ranged && agent != null)
         {
             agent.stoppingDistance = rangedAttackRange * 0.8f;
@@ -198,7 +218,6 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        // Проверка на переход в атаку в зависимости от типа врага
         float attackTriggerDistance = enemyType == EnemyType.Melee ? attackRange : rangedAttackRange;
 
         if (distanceToPlayer < attackTriggerDistance)
@@ -219,10 +238,8 @@ public class EnemyAI : MonoBehaviour
 
     void AttackUpdate(float distanceToPlayer)
     {
-        // Проверка на расстояние для атаки
         float attackTriggerDistance = enemyType == EnemyType.Melee ? attackRange : rangedAttackRange;
 
-        // Если игрок убежал - догоняем
         if (distanceToPlayer > attackTriggerDistance * 1.5f)
         {
             currentState = EnemyState.Chase;
@@ -237,17 +254,8 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        // Для Ranged врага - останавливаемся на дистанции
-        if (enemyType == EnemyType.Ranged)
-        {
-            agent.isStopped = true;
-        }
-        else // Melee
-        {
-            agent.isStopped = true;
-        }
+        agent.isStopped = true;
 
-        // Поворачиваемся к игроку
         Vector3 direction = (player.position - transform.position).normalized;
         direction.y = 0;
         if (direction != Vector3.zero)
@@ -256,7 +264,6 @@ public class EnemyAI : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
         }
 
-        // Атака
         if (Time.time >= lastAttackTime + (enemyType == EnemyType.Melee ? attackCooldown : rangedAttackCooldown) && !isAttacking)
         {
             StartAttack();
@@ -270,33 +277,27 @@ public class EnemyAI : MonoBehaviour
 
         if (enemyType == EnemyType.Melee)
         {
-            // Ближняя атака
             if (animator != null)
             {
                 animator.SetTrigger("Attack");
                 animator.SetBool("IsAttacking", true);
             }
 
-            if (attackSound != null && audioSource != null)
-            {
-                audioSource.PlayOneShot(attackSound);
-            }
+            // 🔥 3D ЗВУК АТАКИ
+            PlaySoundAtPosition(attackSound, transform.position, attackSoundVolume, soundMaxDistance);
 
             Invoke(nameof(PerformMeleeAttack), attackDelay);
         }
-        else // Ranged
+        else
         {
-            // Дальняя атака - стрельба файрболом
             if (animator != null)
             {
                 animator.SetTrigger("Shoot");
                 animator.SetBool("IsAttacking", true);
             }
 
-            if (shootSound != null && audioSource != null)
-            {
-                audioSource.PlayOneShot(shootSound);
-            }
+            // 🔥 3D ЗВУК ВЫСТРЕЛА
+            PlaySoundAtPosition(shootSound, transform.position + Vector3.up * 1.5f, shootSoundVolume, soundMaxDistance * 1.5f);
 
             Invoke(nameof(PerformRangedAttack), rangedAttackDelay);
         }
@@ -327,24 +328,18 @@ public class EnemyAI : MonoBehaviour
 
         agent.isStopped = false;
         currentState = EnemyState.Chase;
-        Debug.Log("Melee атака завершена, продолжаем преследование");
     }
 
     void PerformRangedAttack()
     {
         if (player == null || fireballPrefab == null) return;
 
-        // 🎯 РАСЧЕТ НАПРАВЛЕНИЯ ВЫСТРЕЛА
         Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position + Vector3.up * 1.5f;
-
-        // Получаем направление на игрока (с учетом его движения)
-        Vector3 targetPosition = player.position + Vector3.up * -0.5f; // Цель в центр игрока
+        Vector3 targetPosition = player.position + Vector3.up * -0.5f;
         shootDirection = (targetPosition - spawnPosition).normalized;
 
-        // Создаем файрбол
         GameObject fireball = Instantiate(fireballPrefab, spawnPosition, Quaternion.identity);
 
-        // Настраиваем файрбол
         Fireball fb = fireball.GetComponent<Fireball>();
         if (fb != null)
         {
@@ -355,7 +350,6 @@ public class EnemyAI : MonoBehaviour
         }
         else
         {
-            // Если нет скрипта Fireball - просто двигаем
             Rigidbody rbFireball = fireball.GetComponent<Rigidbody>();
             if (rbFireball != null)
             {
@@ -370,10 +364,8 @@ public class EnemyAI : MonoBehaviour
             animator.SetBool("IsAttacking", false);
         }
 
-        // Ranged враг остается на месте после выстрела
         agent.isStopped = true;
         currentState = EnemyState.Attack;
-        Debug.Log("Ranged атака выполнена!");
     }
 
     bool CanSeePlayer()
@@ -420,6 +412,10 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    public bool IsDead()
+    {
+        return currentState == EnemyState.Dead;
+    }
     void Die()
     {
         currentState = EnemyState.Dead;
@@ -441,7 +437,48 @@ public class EnemyAI : MonoBehaviour
             animator.SetBool("IsDead", true);
         }
 
+        // 🔥 3D ЗВУК СМЕРТИ
+        PlaySoundAtPosition(deathSound, transform.position, deathSoundVolume, soundMaxDistance);
+
+        // 🔥 3D ЗВУК ПОПАДАНИЯ (если был)
+        PlaySoundAtPosition(hitSound, transform.position, hitSoundVolume, soundMaxDistance);
+
+        // Эффект смерти
+        if (deathEffect != null)
+        {
+            Instantiate(deathEffect, transform.position, Quaternion.identity);
+        }
+
         Debug.Log($"Враг ({enemyType}) погиб!");
+    }
+
+    // 🔥 МЕТОД ДЛЯ ВОСПРОИЗВЕДЕНИЯ 3D ЗВУКА
+    void PlaySoundAtPosition(AudioClip clip, Vector3 position, float volume = 1f, float maxDistance = 30f)
+    {
+        if (clip == null) return;
+
+        // Создаем временный объект для звука
+        GameObject soundObject = new GameObject($"3D_Sound_{clip.name}");
+        soundObject.transform.position = position;
+
+        // Добавляем AudioSource
+        AudioSource tempAudio = soundObject.AddComponent<AudioSource>();
+
+        // 🔥 НАСТРАИВАЕМ 3D ЗВУК
+        tempAudio.clip = clip;
+        tempAudio.volume = Mathf.Clamp01(volume);
+        tempAudio.pitch = Random.Range(pitchMin, pitchMax);
+        tempAudio.spatialBlend = 1f;
+        tempAudio.dopplerLevel = 0f;
+        tempAudio.rolloffMode = AudioRolloffMode.Logarithmic;
+        tempAudio.maxDistance = maxDistance;
+        tempAudio.minDistance = 1f;
+        tempAudio.spatialize = true;
+
+        Debug.Log($"🎵 3D Sound: {clip.name} | Volume: {tempAudio.volume} | MaxDist: {maxDistance} | Position: {position}");
+
+        tempAudio.Play();
+        Destroy(soundObject, clip.length + 0.5f);
     }
 
     void OnDrawGizmosSelected()
@@ -449,7 +486,6 @@ public class EnemyAI : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        // Цвет для радиуса атаки в зависимости от типа
         if (enemyType == EnemyType.Melee)
         {
             Gizmos.color = Color.red;
@@ -464,11 +500,14 @@ public class EnemyAI : MonoBehaviour
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, loseInterestRange);
 
-        // Визуализация точки выстрела
         if (enemyType == EnemyType.Ranged && firePoint != null)
         {
             Gizmos.color = Color.magenta;
             Gizmos.DrawSphere(firePoint.position, 0.2f);
         }
+
+        // 🔥 ВИЗУАЛИЗАЦИЯ ДАЛЬНОСТИ ЗВУКА
+        Gizmos.color = new Color(0, 1, 0, 0.3f);
+        Gizmos.DrawWireSphere(transform.position, soundMaxDistance);
     }
 }

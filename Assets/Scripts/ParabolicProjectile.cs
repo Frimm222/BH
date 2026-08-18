@@ -19,22 +19,28 @@ public class ParabolicProjectile : MonoBehaviour
     public AudioClip impactSound;
     public AudioClip explosionSound;
 
+    [Header("Настройки звука")]
+    [Range(0f, 3f)]
+    public float fireSoundVolume = 0.5f;
+    [Range(0f, 3f)]
+    public float explosionSoundVolume = 1.5f;
+    [Range(0f, 3f)]
+    public float impactSoundVolume = 0.8f;
+    [Range(0f, 2f)]
+    public float pitchMin = 0.9f;
+    [Range(0f, 2f)]
+    public float pitchMax = 1.1f;
+    public float soundMaxDistance = 50f;
+
     private Vector3 startPosition;
     private Vector3 endPosition;
     private float arcHeight = 5f;
     private float progress = 0f;
     private bool isFlying = false;
     private System.Action onExplode;
-    private AudioSource audioSource;
 
     void Start()
     {
-        audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-        }
-
         SphereCollider col = GetComponent<SphereCollider>();
         if (col == null)
         {
@@ -49,10 +55,8 @@ public class ParabolicProjectile : MonoBehaviour
             Destroy(trail, lifetime);
         }
 
-        if (fireSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(fireSound, 0.5f);
-        }
+        // 🔥 3D ЗВУК ВЫСТРЕЛА
+        PlaySoundAtPosition(fireSound, transform.position, fireSoundVolume, soundMaxDistance * 0.5f);
 
         Destroy(gameObject, lifetime);
     }
@@ -191,21 +195,26 @@ public class ParabolicProjectile : MonoBehaviour
             }
         }
 
-        SpawnExplosionEffects();
+        // 🔥 3D ЗВУК ВЗРЫВА И ПОПАДАНИЯ
+        PlaySoundAtPosition(explosionSound, transform.position, explosionSoundVolume, soundMaxDistance);
+        PlaySoundAtPosition(impactSound, transform.position, impactSoundVolume, soundMaxDistance * 0.6f);
 
-        if (explosionSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(explosionSound, 1f);
-        }
+        SpawnExplosionEffects();
 
         if (onExplode != null)
         {
             onExplode.Invoke();
         }
 
-        gameObject.GetComponent<MeshRenderer>().enabled = false;
+        // Отключаем визуал, но оставляем звук
+        Renderer rend = GetComponent<Renderer>();
+        if (rend != null)
+        {
+            rend.enabled = false;
+        }
 
-        Destroy(gameObject, 2.8f);
+        // Уничтожаем через время (чтобы звук успел сыграть)
+        Destroy(gameObject, 3f);
     }
 
     void SpawnExplosionEffects()
@@ -223,6 +232,35 @@ public class ParabolicProjectile : MonoBehaviour
         }
     }
 
+    // 🔥 МЕТОД ДЛЯ ВОСПРОИЗВЕДЕНИЯ 3D ЗВУКА
+    void PlaySoundAtPosition(AudioClip clip, Vector3 position, float volume = 1f, float maxDistance = 50f)
+    {
+        if (clip == null) return;
+
+        // Создаем временный объект для звука
+        GameObject soundObject = new GameObject($"3D_Sound_{clip.name}");
+        soundObject.transform.position = position;
+
+        // Добавляем AudioSource
+        AudioSource tempAudio = soundObject.AddComponent<AudioSource>();
+
+        // Настраиваем 3D звук
+        tempAudio.clip = clip;
+        tempAudio.volume = Mathf.Clamp01(volume);
+        tempAudio.pitch = Random.Range(pitchMin, pitchMax);
+        tempAudio.spatialBlend = 1f;
+        tempAudio.dopplerLevel = 0f;
+        tempAudio.rolloffMode = AudioRolloffMode.Logarithmic;
+        tempAudio.maxDistance = maxDistance;
+        tempAudio.minDistance = 1f;
+        tempAudio.spatialize = true;
+
+        Debug.Log($"🎵 3D Sound: {clip.name} | Volume: {tempAudio.volume} | MaxDist: {maxDistance} | Position: {position}");
+
+        tempAudio.Play();
+        Destroy(soundObject, clip.length + 0.5f);
+    }
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
@@ -230,5 +268,9 @@ public class ParabolicProjectile : MonoBehaviour
         Gizmos.DrawWireSphere(endPosition, 0.3f);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, explosionRadius);
+
+        // Визуализация дальности звука
+        Gizmos.color = new Color(0, 1, 0, 0.2f);
+        Gizmos.DrawWireSphere(transform.position, soundMaxDistance);
     }
 }
