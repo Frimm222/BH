@@ -12,28 +12,24 @@ public class CameraController : MonoBehaviour
     public float shoulderOffset = 1.2f;
     public float lookHeight = 1.5f;
 
-    [Header("Прицеливание (только FOV)")]
-    public float normalFOV = 60f;
-    public float aimFOV = 40f;
-    public float fovSmoothSpeed = 5f;
-
     [Header("Ограничения")]
     public float minYAngle = -40f;
     public float maxYAngle = 80f;
 
+    [Header("Чувствительность")]
+    public float baseSensitivity = 3f;
+    private float currentSensitivity = 3f;
+
     private float currentX = 0f;
     private float currentY = 0f;
-    private bool isAiming = false;
-    private Camera cam;
-    private float currentFOV;
+
+    // 🔥 ФЛАГ ДЛЯ ОТКЛЮЧЕНИЯ ВРАЩЕНИЯ
+    private bool isRotationEnabled = true;
 
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-
-        cam = GetComponent<Camera>();
-        if (cam == null) cam = Camera.main;
 
         if (target != null)
         {
@@ -42,42 +38,25 @@ public class CameraController : MonoBehaviour
             currentY = angles.x;
         }
 
-        currentFOV = normalFOV;
-        if (cam != null)
-        {
-            cam.fieldOfView = normalFOV;
-        }
+        LoadSensitivity();
     }
 
     void LateUpdate()
     {
         if (target == null) return;
 
-        // Проверяем состояние прицеливания
-        PlayerController player = target.GetComponent<PlayerController>();
-        if (player != null)
+        // 🔥 ВРАЩАЕМ КАМЕРУ ТОЛЬКО ЕСЛИ РАЗРЕШЕНО
+        if (isRotationEnabled)
         {
-            isAiming = player.IsAiming();
+            float mouseX = Input.GetAxis("Mouse X") * currentSensitivity;
+            float mouseY = Input.GetAxis("Mouse Y") * currentSensitivity;
+
+            currentX += mouseX;
+            currentY -= mouseY;
+            currentY = Mathf.Clamp(currentY, minYAngle, maxYAngle);
         }
 
-        // Ввод с мыши
-        float mouseX = Input.GetAxis("Mouse X") * rotationSpeed;
-        float mouseY = Input.GetAxis("Mouse Y") * rotationSpeed;
-
-        currentX += mouseX;
-        currentY -= mouseY;
-        currentY = Mathf.Clamp(currentY, minYAngle, maxYAngle);
-
-        // 🔥 МЕНЯЕМ ТОЛЬКО FOV (без изменения позиции)
-        float targetFOV = isAiming ? aimFOV : normalFOV;
-        currentFOV = Mathf.Lerp(currentFOV, targetFOV, Time.deltaTime * fovSmoothSpeed);
-
-        if (cam != null)
-        {
-            cam.fieldOfView = currentFOV;
-        }
-
-        // 🔥 ПОЗИЦИЯ КАМЕРЫ ВСЕГДА СТАБИЛЬНА (не меняется при прицеливании)
+        // Позиция камеры всегда обновляется (даже на паузе)
         Vector3 lookTarget = target.position + Vector3.up * lookHeight;
 
         Quaternion rotation = Quaternion.Euler(currentY, currentX, 0);
@@ -91,6 +70,43 @@ public class CameraController : MonoBehaviour
 
         transform.position = desiredPosition;
         transform.LookAt(lookTarget);
+    }
+
+    // 🔥 МЕТОД ДЛЯ ВКЛЮЧЕНИЯ/ОТКЛЮЧЕНИЯ ВРАЩЕНИЯ
+    public void SetRotationEnabled(bool enabled)
+    {
+        isRotationEnabled = enabled;
+
+        if (!enabled)
+        {
+            // Разблокируем курсор когда вращение отключено
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            // Блокируем курсор когда вращение включено
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
+        Debug.Log($"Вращение камеры {(enabled ? "включено" : "отключено")}");
+    }
+
+    public void SetSensitivity(float value)
+    {
+        float minSensitivity = 0.5f;
+        float maxSensitivity = 10f;
+        currentSensitivity = Mathf.Lerp(minSensitivity, maxSensitivity, value);
+
+        PlayerPrefs.SetFloat("MouseSensitivity", value);
+        PlayerPrefs.Save();
+    }
+
+    void LoadSensitivity()
+    {
+        float savedValue = PlayerPrefs.GetFloat("MouseSensitivity", 0.5f);
+        SetSensitivity(savedValue);
     }
 
     public void ResetCamera()
