@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class ParabolicProjectile : MonoBehaviour
 {
@@ -31,6 +32,7 @@ public class ParabolicProjectile : MonoBehaviour
     [Range(0f, 2f)]
     public float pitchMax = 1.1f;
     public float soundMaxDistance = 50f;
+    public AudioMixerGroup sfxGroup;
 
     private Vector3 startPosition;
     private Vector3 endPosition;
@@ -254,8 +256,7 @@ public class ParabolicProjectile : MonoBehaviour
         tempAudio.maxDistance = maxDistance;
         tempAudio.minDistance = 1f;
         tempAudio.spatialize = true;
-
-        Debug.Log($"🎵 3D Sound: {clip.name} | Volume: {tempAudio.volume} | MaxDist: {maxDistance} | Position: {position}");
+        tempAudio.outputAudioMixerGroup = sfxGroup;
 
         tempAudio.Play();
         Destroy(soundObject, clip.length + 0.5f);

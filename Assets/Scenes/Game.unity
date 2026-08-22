@@ -1369,7 +1369,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5812878704720020032, guid: e41cae6c1cc66dd4692501434724de40, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1573,25 +1573,29 @@ PrefabInstance:
       propertyPath: chaseStepInterval
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2758971347302695563, guid: aba96089354cd6e43bd46feb0430bc7a, type: 3}
+      propertyPath: sfxGroup
+      value: 
+      objectReference: {fileID: 1697307799269850934, guid: 6c918c7792ecde142a1ee01da2d023ec, type: 2}
     - target: {fileID: 7171130067143082495, guid: aba96089354cd6e43bd46feb0430bc7a, type: 3}
       propertyPath: m_Name
       value: Golem
       objectReference: {fileID: 0}
     - target: {fileID: 7171130067143082495, guid: aba96089354cd6e43bd46feb0430bc7a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7508344294401120630, guid: aba96089354cd6e43bd46feb0430bc7a, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -96.12484
+      value: -17
       objectReference: {fileID: 0}
     - target: {fileID: 7508344294401120630, guid: aba96089354cd6e43bd46feb0430bc7a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -8.39202
+      value: -3.64
       objectReference: {fileID: 0}
     - target: {fileID: 7508344294401120630, guid: aba96089354cd6e43bd46feb0430bc7a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 43.13735
+      value: -8.7
       objectReference: {fileID: 0}
     - target: {fileID: 7508344294401120630, guid: aba96089354cd6e43bd46feb0430bc7a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -6486,6 +6490,7 @@ MonoBehaviour:
   pitchMin: 0.9
   pitchMax: 1.1
   soundMaxDistance: 30
+  sfxGroup: {fileID: 0}
   player: {fileID: 1666939088}
   animator: {fileID: 1732489918}
 --- !u!114 &1652224186
@@ -6764,7 +6769,7 @@ AudioSource:
   m_GameObject: {fileID: 1666939085}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 8199287857603033790, guid: 6c918c7792ecde142a1ee01da2d023ec, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
@@ -6868,6 +6873,7 @@ MonoBehaviour:
   stepInterval: 0.5
   runStepInterval: 0.38
   sprintStepInterval: 0.5
+  sfxGroup: {fileID: 0}
   raycastDistance: 10
   groundLayerMask:
     serializedVersion: 2
@@ -7808,7 +7814,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8395270139980948662, guid: 6c0ccea7709e4c74aa4e8f7e3b52c098, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8395270139980948662, guid: 6c0ccea7709e4c74aa4e8f7e3b52c098, type: 3}
       propertyPath: m_TagString

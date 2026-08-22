@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class EnemyFireball : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public class EnemyFireball : MonoBehaviour
     public AudioClip impactSound;
     public AudioClip explosionSound;
     public float explosionSoundMaxDistance = 50f;
+    public AudioMixerGroup sfxGroup;
 
     private Vector3 direction;
     private AudioSource audioSource;
@@ -196,6 +198,7 @@ public class EnemyFireball : MonoBehaviour
         tempAudio.rolloffMode = AudioRolloffMode.Logarithmic;
         tempAudio.maxDistance = maxDistance;
         tempAudio.minDistance = 1f;
+        tempAudio.outputAudioMixerGroup = sfxGroup;
         tempAudio.Play();
 
         Destroy(soundObject, clip.length + 0.5f);

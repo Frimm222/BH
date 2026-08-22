@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Audio;
 
 public class EnemyFootstepSystem : MonoBehaviour
 {
@@ -24,6 +25,7 @@ public class EnemyFootstepSystem : MonoBehaviour
     [Range(0f, 2f)]
     public float pitchMax = 1.1f;
     public float soundMaxDistance = 20f;
+    public AudioMixerGroup sfxGroup;
 
     private EnemyAI enemyAI;
     private NavMeshAgent agent;
@@ -80,6 +82,7 @@ public class EnemyFootstepSystem : MonoBehaviour
         footstepAudioSource.minDistance = 1f;
         footstepAudioSource.volume = footstepVolume;
         footstepAudioSource.pitch = 1f;
+        footstepAudioSource.outputAudioMixerGroup = sfxGroup;
     }
 
     void AddDefaultSurfaces()

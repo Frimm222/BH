@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Audio;
 
 public class EnemyAI : MonoBehaviour
 {
@@ -59,6 +60,7 @@ public class EnemyAI : MonoBehaviour
     [Range(0f, 2f)]
     public float pitchMax = 1.1f;
     public float soundMaxDistance = 30f;
+    public AudioMixerGroup sfxGroup;
 
     [Header("Ссылки")]
     public Transform player;
@@ -474,6 +476,7 @@ public class EnemyAI : MonoBehaviour
         tempAudio.maxDistance = maxDistance;
         tempAudio.minDistance = 1f;
         tempAudio.spatialize = true;
+        tempAudio.outputAudioMixerGroup = sfxGroup;
 
         Debug.Log($"🎵 3D Sound: {clip.name} | Volume: {tempAudio.volume} | MaxDist: {maxDistance} | Position: {position}");
 

@@ -171,6 +171,7 @@ MonoBehaviour:
   pitchMin: 0.9
   pitchMax: 1.1
   soundMaxDistance: 50
+  sfxGroup: {fileID: 4739113413752863829, guid: 6c918c7792ecde142a1ee01da2d023ec, type: 2}
 --- !u!1001 &9104114505757422620
 PrefabInstance:
   m_ObjectHideFlags: 0

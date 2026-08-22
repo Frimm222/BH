@@ -282,6 +282,7 @@ MonoBehaviour:
   pitchMin: 0.9
   pitchMax: 1.1
   soundMaxDistance: 20
+  sfxGroup: {fileID: -3992300158562625644, guid: 6c918c7792ecde142a1ee01da2d023ec, type: 2}
 --- !u!82 &-2358743397149382120
 AudioSource:
   m_ObjectHideFlags: 0

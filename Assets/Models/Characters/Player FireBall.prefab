@@ -165,6 +165,8 @@ MonoBehaviour:
   fireSound: {fileID: 0}
   impactSound: {fileID: 0}
   explosionSound: {fileID: 8300000, guid: c2bf7a8e7084ea44a8637da4c0baab7f, type: 3}
+  explosionSoundMaxDistance: 50
+  sfxGroup: {fileID: 4739113413752863829, guid: 6c918c7792ecde142a1ee01da2d023ec, type: 2}
 --- !u!1001 &9104114505757422620
 PrefabInstance:
   m_ObjectHideFlags: 0

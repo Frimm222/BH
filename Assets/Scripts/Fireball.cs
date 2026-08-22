@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class Fireball : MonoBehaviour
 {
@@ -19,6 +20,8 @@ public class Fireball : MonoBehaviour
     public AudioClip impactSound;
     public AudioClip explosionSound;
     public float explosionSoundMaxDistance = 50f;  // Максимальная дальность слышимости
+
+    [SerializeField] private AudioMixerGroup sfxGroup;
 
     private Vector3 direction;
     private AudioSource audioSource;
@@ -111,15 +114,6 @@ public class Fireball : MonoBehaviour
 
             if (isTerrain || isEnemy)
             {
-                if (isEnemy)
-                {
-                    EnemyHealth enemyHealth = hit.collider.GetComponent<EnemyHealth>();
-                    if (enemyHealth != null)
-                    {
-                        enemyHealth.TakeDamage(damage);
-                    }
-                }
-
                 ExplodeAtPosition(hit.point);
             }
         }
@@ -138,14 +132,6 @@ public class Fireball : MonoBehaviour
 
         if (isTerrain || isEnemy)
         {
-            if (isEnemy)
-            {
-                EnemyHealth enemyHealth = other.GetComponent<EnemyHealth>();
-                if (enemyHealth != null)
-                {
-                    enemyHealth.TakeDamage(damage);
-                }
-            }
             ExplodeAtPosition(transform.position);
         }
     }
@@ -162,15 +148,6 @@ public class Fireball : MonoBehaviour
 
         if (isTerrain || isEnemy)
         {
-            if (isEnemy)
-            {
-                EnemyHealth enemyHealth = collision.gameObject.GetComponent<EnemyHealth>();
-                if (enemyHealth != null)
-                {
-                    enemyHealth.TakeDamage(damage);
-                }
-            }
-
             ExplodeAtPosition(collision.contacts[0].point);
         }
     }
@@ -239,6 +216,8 @@ public class Fireball : MonoBehaviour
         tempAudio.maxDistance = maxDistance;
         tempAudio.minDistance = 1f;
         tempAudio.spatialize = true;
+
+        tempAudio.outputAudioMixerGroup = sfxGroup;
 
         tempAudio.Play();
         Destroy(soundObject, clip.length + 0.5f);

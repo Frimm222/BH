@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.Audio;
 
 public class FootstepSystem : MonoBehaviour
 {
@@ -8,6 +9,7 @@ public class FootstepSystem : MonoBehaviour
     public float stepInterval = 0.5f;           // Интервал между шагами при ходьбе
     public float runStepInterval = 0.3f;        // Интервал между шагами при беге
     public float sprintStepInterval = 0.2f;     // Интервал между шагами при спринте
+
 
     [Header("Surface Detection")]
     public float raycastDistance = 1.5f;
