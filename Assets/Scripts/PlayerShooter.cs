@@ -13,6 +13,7 @@ public class PlayerShooter : MonoBehaviour
     public float maxAimDistance = 30f;
     public float arcHeight = 5f;
     public int segments = 20;
+    public GameObject projectileIcon;
 
     [Header("Анимация")]
     public float shootDelay = 0.3f;
@@ -35,6 +36,7 @@ public class PlayerShooter : MonoBehaviour
     [Header("Ссылки")]
     public Transform cameraTransform;
     public Animator animator;
+    public Animator animatorUi;
     public LayerMask aimLayerMask = -1;
     public PlayerController playerController;
 
@@ -53,6 +55,7 @@ public class PlayerShooter : MonoBehaviour
     private Vector3 cachedShootDirection;
     private Vector3 aimedTargetPoint;
     private Vector3 aimedStartPosition;
+    private Animator iconAnimator;
     private AudioSource audioSource;
     private Camera playerCamera;
     private bool isAimedShooting = false;
@@ -82,6 +85,11 @@ public class PlayerShooter : MonoBehaviour
         if (playerController == null)
         {
             playerController = GetComponent<PlayerController>();
+        }
+
+        if (projectileIcon != null)
+        {
+            iconAnimator = projectileIcon.GetComponent<Animator>();
         }
 
         SetupTrajectoryLine();
@@ -159,6 +167,10 @@ public class PlayerShooter : MonoBehaviour
             animator.SetTrigger("Shoot");
             animator.SetBool("IsFiring", true);
         }
+        if (animatorUi != null)
+        {
+            animatorUi.SetTrigger("Reload");
+        }
 
         if (shootSound != null && audioSource != null)
         {
@@ -212,9 +224,9 @@ public class PlayerShooter : MonoBehaviour
         aimedTargetPoint = GetAimedTargetPoint();
         aimedStartPosition = firePoint != null ? firePoint.position : transform.position + Vector3.up * 1.5f;
 
-        if (animator != null)
+        if (iconAnimator != null)
         {
-            animator.SetBool("IsCharging", true);
+            iconAnimator.SetBool("IsCharging", true);
         }
 
         // 🔥 НЕ БЛОКИРУЕМ ДВИЖЕНИЕ! Можно двигаться во время прицеливания
@@ -225,6 +237,10 @@ public class PlayerShooter : MonoBehaviour
     {
         // Обновляем точку прицела
         aimedTargetPoint = GetAimedTargetPoint();
+        if (iconAnimator != null)
+        {
+            iconAnimator.SetBool("Charged", true);
+        }
     }
 
     void ReleaseAimedFireball()
@@ -235,9 +251,9 @@ public class PlayerShooter : MonoBehaviour
         if (chargeTimer < 0.3f)
         {
             // Отмена зарядки
-            if (animator != null)
+            if (iconAnimator != null)
             {
-                animator.SetBool("IsCharging", false);
+                iconAnimator.SetBool("IsCharging", false);
             }
             currentState = FireState.Idle;
             Debug.Log("Зарядка отменена (слишком короткая)");
@@ -285,6 +301,12 @@ public class PlayerShooter : MonoBehaviour
                 playerController.SetMovementLocked(false);
             }
             return;
+        }
+
+        if (iconAnimator != null)
+        {
+            iconAnimator.SetBool("Charged", false);
+            iconAnimator.SetBool("IsCharging", false);
         }
 
         // 🔥 ОБНОВЛЯЕМ ТОЧКУ ПРИЦЕЛА ПЕРЕД ВЫЛЕТОМ

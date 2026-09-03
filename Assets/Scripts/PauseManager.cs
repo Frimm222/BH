@@ -10,6 +10,8 @@ public class PauseManager : MonoBehaviour
     public GameObject settingsPanel;
     public GameObject confirmExitPanel;
     public GameObject UI;
+    public GameObject winPanel;
+    public GameObject deathPanel;
 
     [Header("Кнопки")]
     public Button resumeButton;
@@ -19,6 +21,9 @@ public class PauseManager : MonoBehaviour
     public Button backButton;
     public Button confirmMenuButton;
     public Button cancelMenuButton;
+    public Button winMenuButton;
+    public Button deathMenuButton;
+    public Button deathRestartButton;
 
     [Header("Настройки (опционально)")]
     public Slider volumeSlider;
@@ -52,6 +57,14 @@ public class PauseManager : MonoBehaviour
         resumeButton.onClick.AddListener(ResumeGame);
         settingsButton.onClick.AddListener(OpenSettings);
         menuButton.onClick.AddListener(OpenConfirmExit);
+        winMenuButton.onClick.AddListener(GoToMenu);
+        deathMenuButton.onClick.AddListener(GoToMenu);
+        deathRestartButton.onClick.AddListener(() =>
+        {
+            PlaySound(buttonClickSound);
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        });
         backButton.onClick.AddListener(CloseSettings);
         confirmMenuButton.onClick.AddListener(GoToMenu);
         cancelMenuButton.onClick.AddListener(CloseConfirmExit);
@@ -87,6 +100,8 @@ public class PauseManager : MonoBehaviour
         pausePanel.SetActive(false);
         settingsPanel.SetActive(false);
         confirmExitPanel.SetActive(false);
+        winPanel.SetActive(false);
+        deathPanel.SetActive(false);
         UI.SetActive(true);
 
         // Ищем CameraController если не назначен
@@ -386,6 +401,60 @@ public class PauseManager : MonoBehaviour
         {
             PauseGame();
         }
+    }
+
+    public void ShowWinPanel()
+    {
+        isPaused = true;
+        Time.timeScale = 0f;
+        if (cameraController != null)
+        {
+            cameraController.SetRotationEnabled(false);
+        }
+        // Показываем панель победы
+        winPanel.SetActive(true);
+        pausePanel.SetActive(false);
+        settingsPanel.SetActive(false);
+        confirmExitPanel.SetActive(false);
+        deathPanel.SetActive(false);
+        UI.SetActive(false);
+        // Разблокируем курсор
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        // Отключаем звуки шагов (опционально)
+        FootstepSystem footstep = FindObjectOfType<FootstepSystem>();
+        if (footstep != null)
+        {
+            footstep.enabled = false;
+        }
+        Debug.Log("Победа! Панель победы отображена.");
+    }
+
+    public void ShowDeathPanel()
+    {
+        isPaused = true;
+        Time.timeScale = 0f;
+        if (cameraController != null)
+        {
+            cameraController.SetRotationEnabled(false);
+        }
+        // Показываем панель смерти
+        deathPanel.SetActive(true);
+        winPanel.SetActive(false);
+        pausePanel.SetActive(false);
+        settingsPanel.SetActive(false);
+        confirmExitPanel.SetActive(false);
+        UI.SetActive(false);
+        // Разблокируем курсор
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        // Отключаем звуки шагов (опционально)
+        FootstepSystem footstep = FindObjectOfType<FootstepSystem>();
+        if (footstep != null)
+        {
+            footstep.enabled = false;
+        }
+        Debug.Log("Смерть! Панель смерти отображена.");
     }
 
     // ========== ОЧИСТКА ==========

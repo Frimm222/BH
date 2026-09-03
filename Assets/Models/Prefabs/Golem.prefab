@@ -140,7 +140,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
   enemyType: 0
   moveSpeed: 5
-  stoppingDistance: 16
+  stoppingDistance: 14
   attackRange: 16
   detectionRange: 10000
   loseInterestRange: 100000
@@ -169,6 +169,7 @@ MonoBehaviour:
   pitchMin: 0.9
   pitchMax: 1.1
   soundMaxDistance: 30
+  sfxGroup: {fileID: 0}
   player: {fileID: 0}
   animator: {fileID: 2514748694449107259}
 --- !u!195 &1461631297310004679

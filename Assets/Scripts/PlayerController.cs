@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     public float dashCooldown = 1.5f;
     public float dashSpeedMultiplier = 3f;
     public AudioClip dashSound;
+    public GameObject dashIcon;
 
     [Header("Прицеливание")]
     public KeyCode aimKey = KeyCode.Mouse1;
@@ -329,6 +330,12 @@ public class PlayerController : MonoBehaviour
         {
             animator.SetTrigger("DashTrigger");
             animator.SetBool("IsDashing", true);
+        }
+
+        if (dashIcon != null)
+        {
+            Animator dashIconAnimator = dashIcon.GetComponent<Animator>();
+            dashIconAnimator.SetTrigger("Used");
         }
 
         // 🔥 ВОСПРОИЗВОДИМ ЗВУК РЫВКА

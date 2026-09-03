@@ -149,7 +149,7 @@ public class EnemyAI : MonoBehaviour
 
         if (enemyType == EnemyType.Ranged && agent != null)
         {
-            agent.stoppingDistance = rangedAttackRange * 0.8f;
+            //agent.stoppingDistance = rangedAttackRange * 0.8f;
         }
     }
 
@@ -181,7 +181,7 @@ public class EnemyAI : MonoBehaviour
 
     void PatrolUpdate(float distanceToPlayer)
     {
-        if (distanceToPlayer < detectionRange && CanSeePlayer())
+        if (distanceToPlayer < detectionRange)
         {
             currentState = EnemyState.Chase;
             Debug.Log($"Враг ({enemyType}) заметил игрока!");
@@ -222,7 +222,7 @@ public class EnemyAI : MonoBehaviour
 
         float attackTriggerDistance = enemyType == EnemyType.Melee ? attackRange : rangedAttackRange;
 
-        if (distanceToPlayer < attackTriggerDistance)
+        if ((distanceToPlayer < attackTriggerDistance) && CanSeePlayer())
         {
             currentState = EnemyState.Attack;
             Debug.Log($"Враг ({enemyType}) атакует!");
@@ -240,6 +240,12 @@ public class EnemyAI : MonoBehaviour
 
     void AttackUpdate(float distanceToPlayer)
     {
+
+        if (!CanSeePlayer())
+        {
+            currentState = EnemyState.Chase;
+            return;
+        }
         float attackTriggerDistance = enemyType == EnemyType.Melee ? attackRange : rangedAttackRange;
 
         if (distanceToPlayer > attackTriggerDistance * 1.5f)

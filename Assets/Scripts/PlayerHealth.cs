@@ -10,6 +10,7 @@ public class PlayerHealth : MonoBehaviour
     [Header("UI")]
     public Slider healthSlider;
     public Text healthText;
+    public PauseManager pauseManager;
 
     [Header("Эффекты")]
     public GameObject deathEffect;
@@ -59,6 +60,12 @@ public class PlayerHealth : MonoBehaviour
         UpdateUI();
 
         // Визуальные эффекты
+        if (healthSlider != null)
+        {
+            Animator sliderAnimator = healthSlider.GetComponent<Animator>();
+            sliderAnimator.SetTrigger("Hurt");
+        }
+
         if (animator != null)
         {
             animator.SetTrigger("Hurt");
@@ -108,10 +115,13 @@ public class PlayerHealth : MonoBehaviour
             playerController = GetComponent<PlayerController>();
             playerController.SetMovementLocked(true);
         }
-
+        Invoke(nameof(ShowDeathP), 2f);
         Destroy(gameObject, 3f); // Уничтожаем игрока через 3 секунды после смерти
-        // Здесь можно добавить перезагрузку уровня или экран смерти
-        // Application.LoadLevel(Application.loadedLevel);
+    }
+    void ShowDeathP() {
+    if (pauseManager != null) {
+        pauseManager.ShowDeathPanel();
+    }
     }
 
     void UpdateUI()

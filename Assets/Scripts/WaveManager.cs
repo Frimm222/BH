@@ -20,6 +20,7 @@ public class WaveManager : MonoBehaviour
     public UnityEngine.UI.Text enemiesLeftText;   // Текст для отображения оставшихся врагов
 
     [Header("Ссылки")]
+    public PauseManager pauseManager;
     public GameObject[] enemyPrefabs;             // Префабы врагов (по порядку)
 
     private int currentWaveIndex = 0;
@@ -297,7 +298,7 @@ public class WaveManager : MonoBehaviour
         if (currentWaveIndex >= waves.Length)
         {
             Debug.Log("🏆 Все волны пройдены!");
-            ShowWaveComplete();
+            Invoke(nameof(ShowWaveComplete), 2f);
             return;
         }
 
@@ -315,6 +316,7 @@ public class WaveManager : MonoBehaviour
         {
             waveText.text = "🏆 Все волны пройдены!";
         }
+        pauseManager.ShowWinPanel();
     }
 
     void UpdateUI()
