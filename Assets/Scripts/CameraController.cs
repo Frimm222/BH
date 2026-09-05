@@ -20,11 +20,15 @@ public class CameraController : MonoBehaviour
     public float baseSensitivity = 3f;
     private float currentSensitivity = 3f;
 
+    [Header("Начальные углы")]
+    public float defaultXAngle = 0f;
+    public float defaultYAngle = 20f;
+    public bool syncPlayerRotation = true;
+
     private float currentX = 0f;
     private float currentY = 0f;
-
-    // 🔥 ФЛАГ ДЛЯ ОТКЛЮЧЕНИЯ ВРАЩЕНИЯ
     private bool isRotationEnabled = true;
+    private bool isSyncEnabled = true; // 🔥 Флаг для синхронизации
 
     void Start()
     {
@@ -33,19 +37,37 @@ public class CameraController : MonoBehaviour
 
         if (target != null)
         {
+            currentX = defaultXAngle;
+            currentY = defaultYAngle;
+
             Vector3 angles = transform.eulerAngles;
-            currentX = angles.y;
-            currentY = angles.x;
+            if (angles != Vector3.zero)
+            {
+                currentX = angles.y;
+                currentY = angles.x;
+            }
         }
 
         LoadSensitivity();
+
+        // Принудительная синхронизация при старте
+        if (syncPlayerRotation && target != null)
+        {
+            Vector3 camDir = transform.forward;
+            camDir.y = 0;
+            camDir.Normalize();
+            if (camDir != Vector3.zero)
+            {
+                target.rotation = Quaternion.LookRotation(camDir);
+            }
+        }
     }
 
     void LateUpdate()
     {
         if (target == null) return;
 
-        // 🔥 ВРАЩАЕМ КАМЕРУ ТОЛЬКО ЕСЛИ РАЗРЕШЕНО
+        // 🔥 ВРАЩЕНИЕ КАМЕРЫ ТОЛЬКО ЕСЛИ РАЗРЕШЕНО
         if (isRotationEnabled)
         {
             float mouseX = Input.GetAxis("Mouse X") * currentSensitivity;
@@ -56,7 +78,13 @@ public class CameraController : MonoBehaviour
             currentY = Mathf.Clamp(currentY, minYAngle, maxYAngle);
         }
 
-        // Позиция камеры всегда обновляется (даже на паузе)
+        // 🔥 СИНХРОНИЗАЦИЯ ПЕРСОНАЖА ТОЛЬКО ЕСЛИ РАЗРЕШЕНА
+        if (syncPlayerRotation && isSyncEnabled && isRotationEnabled)
+        {
+            SyncPlayerRotation();
+        }
+
+        // Позиция камеры
         Vector3 lookTarget = target.position + Vector3.up * lookHeight;
 
         Quaternion rotation = Quaternion.Euler(currentY, currentX, 0);
@@ -72,25 +100,83 @@ public class CameraController : MonoBehaviour
         transform.LookAt(lookTarget);
     }
 
-    // 🔥 МЕТОД ДЛЯ ВКЛЮЧЕНИЯ/ОТКЛЮЧЕНИЯ ВРАЩЕНИЯ
+    void SyncPlayerRotation()
+    {
+        if (target == null) return;
+
+        Vector3 cameraDirection = transform.forward;
+        cameraDirection.y = 0;
+        cameraDirection.Normalize();
+
+        if (cameraDirection != Vector3.zero)
+        {
+            // Мгновенная синхронизация
+            target.rotation = Quaternion.LookRotation(cameraDirection);
+        }
+    }
+
+    // 🔥 МЕТОД ДЛЯ ОТКЛЮЧЕНИЯ СИНХРОНИЗАЦИИ (для катсцен)
+    public void SetSyncEnabled(bool enabled)
+    {
+        isSyncEnabled = enabled;
+        Debug.Log($"Синхронизация персонажа {(enabled ? "включена" : "отключена")}");
+    }
+
+    // 🔥 МЕТОД ДЛЯ ПРИНУДИТЕЛЬНОГО СБРОСА ПОВОРОТА ПЕРСОНАЖА
+    public void ForcePlayerRotation()
+    {
+        if (target == null) return;
+
+        // Поворачиваем персонажа в направление камеры
+        Vector3 cameraDirection = transform.forward;
+        cameraDirection.y = 0;
+        cameraDirection.Normalize();
+
+        if (cameraDirection != Vector3.zero)
+        {
+            target.rotation = Quaternion.LookRotation(cameraDirection);
+            Debug.Log($"Принудительный сброс поворота персонажа: {cameraDirection}");
+        }
+    }
+
+    public void ResetCamera()
+    {
+        ResetCamera(defaultXAngle, defaultYAngle);
+    }
+
+    public void ResetCamera(float xAngle, float yAngle)
+    {
+        currentX = xAngle;
+        currentY = yAngle;
+
+        // После сброса камеры - синхронизируем персонажа
+        if (syncPlayerRotation && target != null)
+        {
+            ForcePlayerRotation();
+        }
+
+        Debug.Log($"Камера сброшена на углы: X={xAngle}, Y={yAngle}");
+    }
+
     public void SetRotationEnabled(bool enabled)
     {
         isRotationEnabled = enabled;
 
         if (!enabled)
         {
-            // Разблокируем курсор когда вращение отключено
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            // 🔥 ОТКЛЮЧАЕМ СИНХРОНИЗАЦИЮ КОГДА ПАУЗА
+            isSyncEnabled = false;
         }
         else
         {
-            // Блокируем курсор когда вращение включено
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+            // 🔥 ВКЛЮЧАЕМ СИНХРОНИЗАЦИЮ И ПРИНУДИТЕЛЬНО СИНХРОНИЗИРУЕМ
+            isSyncEnabled = true;
+            ForcePlayerRotation();
         }
-
-        Debug.Log($"Вращение камеры {(enabled ? "включено" : "отключено")}");
     }
 
     public void SetSensitivity(float value)
@@ -107,15 +193,5 @@ public class CameraController : MonoBehaviour
     {
         float savedValue = PlayerPrefs.GetFloat("MouseSensitivity", 0.5f);
         SetSensitivity(savedValue);
-    }
-
-    public void ResetCamera()
-    {
-        if (target != null)
-        {
-            Vector3 angles = transform.eulerAngles;
-            currentX = angles.y;
-            currentY = angles.x;
-        }
     }
 }

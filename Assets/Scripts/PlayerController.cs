@@ -383,35 +383,6 @@ public class PlayerController : MonoBehaviour
         Debug.Log($"Воспроизведен звук: {clip.name}");
     }
 
-    private void OnGUI()
-    {
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 16;
-        style.normal.textColor = Color.white;
-
-        if (dashCooldownTimer > 0)
-        {
-            GUI.Label(new Rect(10, 10, 200, 30), $"Dash CD: {dashCooldownTimer:F1}s", style);
-        }
-        else
-        {
-            GUI.Label(new Rect(10, 10, 200, 30), "Dash READY! (Shift)", style);
-        }
-
-        if (isDashing)
-        {
-            GUI.Label(new Rect(10, 40, 200, 30), "DASHING!", style);
-        }
-
-        if (isJumping)
-        {
-            GUI.Label(new Rect(10, 70, 200, 30), "JUMPING!", style);
-        }
-
-        // Отладка AudioSource
-        GUI.Label(new Rect(10, 100, 300, 30), $"AudioSource: {(audioSource != null ? "✅" : "❌")}", style);
-    }
-
     public bool IsAiming()
     {
         return isAiming;

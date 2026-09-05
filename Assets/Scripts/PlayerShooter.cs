@@ -40,6 +40,9 @@ public class PlayerShooter : MonoBehaviour
     public LayerMask aimLayerMask = -1;
     public PlayerController playerController;
 
+    // 🔥 НОВАЯ ПЕРЕМЕННАЯ: БЛОКИРОВКА СТРЕЛЬБЫ
+    private bool isShootingLocked = false;
+
     private enum FireState
     {
         Idle,
@@ -59,7 +62,6 @@ public class PlayerShooter : MonoBehaviour
     private AudioSource audioSource;
     private Camera playerCamera;
     private bool isAimedShooting = false;
-    //private bool isAimingMode = false;
 
     void Start()
     {
@@ -117,6 +119,9 @@ public class PlayerShooter : MonoBehaviour
 
     void Update()
     {
+        // 🔥 ПРОВЕРКА БЛОКИРОВКИ СТРЕЛЬБЫ
+        if (isShootingLocked) return;
+
         // Обычный выстрел (ЛКМ)
         if (Input.GetKeyDown(fireKey) && Time.time >= nextFireTime && currentState == FireState.Idle)
         {
@@ -154,6 +159,53 @@ public class PlayerShooter : MonoBehaviour
                 audioSource.PlayOneShot(chargeSound, 0.3f);
             }
         }
+    }
+
+    // ========== БЛОКИРОВКА СТРЕЛЬБЫ ==========
+
+    /// <summary>
+    /// Блокирует или разблокирует возможность стрельбы
+    /// </summary>
+    /// <param name="locked">true - стрельба заблокирована, false - разблокирована</param>
+    public void SetShootingLocked(bool locked)
+    {
+        isShootingLocked = locked;
+
+        // Если блокируем и идет зарядка - отменяем её
+        if (locked && isCharging)
+        {
+            CancelCharging();
+        }
+
+        Debug.Log($"Стрельба {(locked ? "заблокирована" : "разблокирована")}");
+    }
+
+    /// <summary>
+    /// Проверяет, заблокирована ли стрельба
+    /// </summary>
+    public bool IsShootingLocked()
+    {
+        return isShootingLocked;
+    }
+
+    /// <summary>
+    /// Отменяет текущую зарядку прицельного файрбола
+    /// </summary>
+    void CancelCharging()
+    {
+        if (!isCharging) return;
+
+        isCharging = false;
+        trajectoryLine.enabled = false;
+        currentState = FireState.Idle;
+
+        if (iconAnimator != null)
+        {
+            iconAnimator.SetBool("IsCharging", false);
+            iconAnimator.SetBool("Charged", false);
+        }
+
+        Debug.Log("Зарядка отменена (блокировка)");
     }
 
     // ========== ОБЫЧНЫЙ ВЫСТРЕЛ ==========
@@ -229,13 +281,11 @@ public class PlayerShooter : MonoBehaviour
             iconAnimator.SetBool("IsCharging", true);
         }
 
-        // 🔥 НЕ БЛОКИРУЕМ ДВИЖЕНИЕ! Можно двигаться во время прицеливания
         Debug.Log("Начало зарядки прицельного файрбола (движение разрешено)");
     }
 
     void UpdateCharging()
     {
-        // Обновляем точку прицела
         aimedTargetPoint = GetAimedTargetPoint();
         if (iconAnimator != null)
         {
@@ -250,7 +300,6 @@ public class PlayerShooter : MonoBehaviour
 
         if (chargeTimer < 0.3f)
         {
-            // Отмена зарядки
             if (iconAnimator != null)
             {
                 iconAnimator.SetBool("IsCharging", false);
@@ -260,13 +309,11 @@ public class PlayerShooter : MonoBehaviour
             return;
         }
 
-        // 🔥 БЛОКИРУЕМ ДВИЖЕНИЕ ТОЛЬКО В МОМЕНТ ВЫСТРЕЛА
         if (playerController != null)
         {
             playerController.SetMovementLocked(true);
         }
 
-        // Запускаем анимацию прицельного выстрела
         currentState = FireState.AimedShooting;
         isAimedShooting = true;
 
@@ -282,7 +329,6 @@ public class PlayerShooter : MonoBehaviour
             audioSource.PlayOneShot(shootSound, 0.7f);
         }
 
-        // Задержка перед вылетом снаряда
         Invoke(nameof(FireAimedProjectile), aimedAnimationDelay);
         Invoke(nameof(ResetAimedShoot), aimedAnimationDelay + 0.3f);
 
@@ -309,7 +355,6 @@ public class PlayerShooter : MonoBehaviour
             iconAnimator.SetBool("IsCharging", false);
         }
 
-        // 🔥 ОБНОВЛЯЕМ ТОЧКУ ПРИЦЕЛА ПЕРЕД ВЫЛЕТОМ
         aimedTargetPoint = GetAimedTargetPoint();
 
         Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position + Vector3.up * 1.5f;
@@ -345,7 +390,6 @@ public class PlayerShooter : MonoBehaviour
         isAimedShooting = false;
         currentState = FireState.Idle;
 
-        // 🔥 РАЗБЛОКИРУЕМ ДВИЖЕНИЕ
         if (playerController != null)
         {
             playerController.SetMovementLocked(false);
