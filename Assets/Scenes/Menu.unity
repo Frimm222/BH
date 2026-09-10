@@ -978,7 +978,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &368465917
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1484,6 +1484,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: ff2ac95bb43041748a3708a3cac5341a, type: 3}
       propertyPath: m_Name
       value: wizard
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ff2ac95bb43041748a3708a3cac5341a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: ff2ac95bb43041748a3708a3cac5341a, type: 3}
       propertyPath: m_Controller
@@ -3173,7 +3177,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.000013351, y: -367.48}
+  m_AnchoredPosition: {x: -0.000013351, y: -482.77}
   m_SizeDelta: {x: 1542.8033, y: 168.834}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1529560574
@@ -5010,7 +5014,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.0058899, y: -218}
+  m_AnchoredPosition: {x: 0.0058899, y: 472.8}
   m_SizeDelta: {x: 1542.8, y: 130.1247}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2023574256
@@ -5169,7 +5173,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 3598.8628, y: 2010.9841}
+  m_SizeDelta: {x: 2560, y: 1440}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2024829780
 MonoBehaviour:
@@ -5184,14 +5188,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.7686275, g: 0.7686275, b: 0.7686275, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 8c30c110853e6574aab328c3e8e8364a, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
