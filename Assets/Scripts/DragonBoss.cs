@@ -51,7 +51,7 @@ public class DragonBoss : MonoBehaviour
     public int groundAttackDamage = 25;
     public float groundAttackWindUp = 0.8f;
     public float groundAttackRecovery = 1.2f;
-    public GameObject groundImpactEffect;
+    public ParticleSystem groundImpactEffect;
     public float groundApproachDistance = 5f;
     public float landingSpeed = 15f;
     public float groundAttackApproachTimeout = 5f;
@@ -80,6 +80,7 @@ public class DragonBoss : MonoBehaviour
     public AudioClip roarSound;
     public AudioClip flySound;
     public AudioClip fireballSound;
+    public AudioClip fireballSoundWings;
     public AudioClip groundAttackSound;
     public AudioClip breathSound;
     public AudioClip hitSound;
@@ -198,6 +199,7 @@ public class DragonBoss : MonoBehaviour
 
         // 🔥 НАСТРАИВАЕМ PARTICLE SYSTEM (ВЫЗЫВАЕМ ПОСЛЕ ИНИЦИАЛИЗАЦИИ)
         SetupFireBreathEffect();
+        SetupGroundImpactEffect();
 
         if (fireballDelays == null || fireballDelays.Length == 0)
         {
@@ -240,6 +242,39 @@ public class DragonBoss : MonoBehaviour
         Debug.Log($"   - Позиция: {fireBreathEffect.transform.position}");
         Debug.Log($"   - Родитель: {(fireBreathEffect.transform.parent != null ? fireBreathEffect.transform.parent.name : "нет")}");
         Debug.Log($"   - Частиц: {fireBreathEffect.particleCount}");
+    }
+    void SetupGroundImpactEffect()
+    {
+        if (groundImpactEffect == null)
+        {
+            Debug.LogError("❌ Ground Impact Effect НЕ НАЗНАЧЕН! Перетащите GroundImpact в поле.");
+            return;
+        }
+
+        Debug.Log($"🔍 Настраиваем Particle System: {groundImpactEffect.gameObject.name}");
+
+        // 🔥 ПРОВЕРЯЕМ АКТИВНОСТЬ
+        if (!groundImpactEffect.gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning("⚠️ Particle System неактивен, активируем...");
+            groundImpactEffect.gameObject.SetActive(true);
+        }
+
+        // 🔥 ПОЛУЧАЕМ МОДУЛЬ ПРАВИЛЬНО
+        var main = groundImpactEffect.main;
+        main.playOnAwake = false;
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
+
+        // Останавливаем и очищаем
+        groundImpactEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        // 🔥 ПРОВЕРЯЕМ ЧТО ЭФФЕКТ ВИДЕН
+        Debug.Log($"✅ Particle System настроен:");
+        Debug.Log($"   - Имя: {groundImpactEffect.gameObject.name}");
+        Debug.Log($"   - Активен: {groundImpactEffect.gameObject.activeInHierarchy}");
+        Debug.Log($"   - Позиция: {groundImpactEffect.transform.position}");
+        Debug.Log($"   - Родитель: {(groundImpactEffect.transform.parent != null ? groundImpactEffect.transform.parent.name : "нет")}");
+        Debug.Log($"   - Частиц: {groundImpactEffect.particleCount}");
     }
 
     void Update()
@@ -291,9 +326,30 @@ public class DragonBoss : MonoBehaviour
                 BreathAttackUpdate(distanceToPlayer);
                 break;
         }
-
+        UpdateSounds();
         UpdateAnimations();
         AvoidTerrain();
+    }
+
+    void UpdateSounds()
+    {
+        if (currentState == BossState.Flying || currentState == BossState.Approaching || currentState == BossState.Idle)
+        {
+            if (!audioSource.isPlaying)
+            {
+                audioSource.clip = flySound;
+                audioSource.volume = 1f;
+                audioSource.loop = true;
+                audioSource.Play();
+            }
+        }
+        else
+        {
+            if (audioSource.isPlaying && audioSource.clip == flySound)
+            {
+                audioSource.Stop();
+            }
+        }
     }
 
     // ========== ПОЯВЛЕНИЕ ==========
@@ -306,12 +362,15 @@ public class DragonBoss : MonoBehaviour
             Instantiate(appearanceEffect, transform.position, Quaternion.identity);
         }
 
-        PlaySoundAtPosition(roarSound, transform.position, roarVolume, soundMaxDistance * 2f);
-
         if (animator != null)
         {
             animator.SetTrigger("Appear");
         }
+
+        audioSource.clip = roarSound;
+        audioSource.volume = 1f;
+        audioSource.loop = false;
+        audioSource.Play();
 
         yield return new WaitForSeconds(appearanceDuration);
 
@@ -593,10 +652,18 @@ public class DragonBoss : MonoBehaviour
     {
         if (isAttackInProgress) return;
 
+        audioSource.clip = fireballSoundWings;
+        audioSource.volume = 1f;
+        audioSource.loop = false;
+        audioSource.Play();
+
         isAttackInProgress = true;
         lastAttackTime = Time.time;
         currentState = BossState.FireballAttack;
-
+        if (animator != null)
+        {
+            animator.SetTrigger("FireballAttack");
+        }
         StartCoroutine(FireballAttack());
     }
 
@@ -604,17 +671,12 @@ public class DragonBoss : MonoBehaviour
     {
         Debug.Log("🔥 Дракон атакует фаерболами!");
 
-        if (animator != null)
-        {
-            animator.SetTrigger("FireballAttack");
-        }
-
         yield return new WaitForSeconds(attackDelay);
 
         for (int i = 0; i < 3; i++)
         {
             ShootFireball(i + 1);
-            PlaySoundAtPosition(fireballSound, firePoint.position, fireballVolume, soundMaxDistance);
+            PlaySoundAtPosition(fireballSound, firePoint.position, 1f, soundMaxDistance);
 
             float delay = (i < fireballDelays.Length) ? fireballDelays[i] : 0.5f;
             Debug.Log($"🔥 Фаербол {i + 1}/3 выпущен, задержка: {delay} сек");
@@ -622,7 +684,7 @@ public class DragonBoss : MonoBehaviour
             yield return new WaitForSeconds(delay);
         }
 
-        yield return new WaitForSeconds(0.5f);
+        //yield return new WaitForSeconds(0.5f);
 
         EndAttack();
     }
@@ -695,6 +757,12 @@ public class DragonBoss : MonoBehaviour
         currentState = BossState.GroundAttack;
         isGroundAttacking = true;
 
+        audioSource.Stop();
+        audioSource.clip = groundAttackSound;
+        audioSource.volume = 1f;
+        audioSource.loop = false;
+        audioSource.Play();
+
         Debug.Log("💥 Дракон готовится к удару по земле!");
 
         if (animator != null)
@@ -711,11 +779,28 @@ public class DragonBoss : MonoBehaviour
             animator.SetTrigger("GroundAttackHit");
         }
 
-        PlaySoundAtPosition(groundAttackSound, transform.position, groundAttackVolume, soundMaxDistance);
-
         if (groundImpactEffect != null)
         {
-            Instantiate(groundImpactEffect, transform.position, Quaternion.identity);
+            Debug.Log($"🔥 Запускаем Particle System: {groundImpactEffect.gameObject.name}");
+
+            // Убеждаемся что объект активен
+            if (!groundImpactEffect.gameObject.activeInHierarchy)
+            {
+                groundImpactEffect.gameObject.SetActive(true);
+            }
+
+            // 🔥 СБРАСЫВАЕМ И ЗАПУСКАЕМ
+            groundImpactEffect.Clear();
+            groundImpactEffect.Play();
+
+            // Проверяем что играет
+            yield return new WaitForSeconds(0.1f);
+            Debug.Log($"   - IsPlaying: {groundImpactEffect.isPlaying}");
+            Debug.Log($"   - ParticleCount: {groundImpactEffect.particleCount}");
+        }
+        else
+        {
+            Debug.LogError("❌ groundImpactEffect == null в GroundAttack!");
         }
 
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, groundAttackRange);
@@ -734,9 +819,17 @@ public class DragonBoss : MonoBehaviour
 
         yield return new WaitForSeconds(groundAttackRecovery);
 
+        if (groundImpactEffect != null)
+        {
+            groundImpactEffect.Clear();
+            groundImpactEffect.Stop();
+            Debug.Log("🔥 Particle System удар по земле остановлен");
+        }
+
         isGroundAttacking = false;
         hasLanded = false;
         EndAttack();
+        
     }
 
     // ========== АТАКА 3: ОГНЕННОЕ ДЫХАНИЕ ==========
@@ -829,6 +922,12 @@ public class DragonBoss : MonoBehaviour
     {
         currentState = BossState.BreathAttack;
 
+        audioSource.Stop();
+        audioSource.clip = breathSound;
+        audioSource.volume = 1f;
+        audioSource.loop = false;
+        audioSource.Play();
+
         Debug.Log("🔥 Дракон использует огненное дыхание!");
 
         if (animator != null)
@@ -866,8 +965,6 @@ public class DragonBoss : MonoBehaviour
         isBreathing = true;
         breathTimer = 0f;
         breathTickTimer = 0f;
-
-        PlaySoundAtPosition(breathSound, transform.position, breathVolume, soundMaxDistance * 1.5f);
 
         while (breathTimer < breathDuration)
         {
@@ -1049,54 +1146,58 @@ public class DragonBoss : MonoBehaviour
             animator.SetBool("IsDead", true);
         }
 
-        PlaySoundAtPosition(deathSound, transform.position, deathVolume, soundMaxDistance * 2f);
+        audioSource.Stop();
+        audioSource.clip = deathSound;
+        audioSource.volume = 1f;
+        audioSource.loop = false;
+        audioSource.Play();
 
         StartCoroutine(DeathSequence());
     }
 
     IEnumerator DeathSequence()
     {
-        float fallTimer = 0f;
-        float fallDuration = 2f;
-        Vector3 startPos = transform.position;
-        Vector3 groundPos = startPos;
+        //float fallTimer = 0f;
+        //float fallDuration = 2f;
+        //Vector3 startPos = transform.position;
+        //Vector3 groundPos = startPos;
 
-        RaycastHit hit;
-        if (Physics.Raycast(startPos, Vector3.down, out hit, 100f, obstacleLayerMask))
-        {
-            groundPos = hit.point;
-        }
+        //RaycastHit hit;
+        //if (Physics.Raycast(startPos, Vector3.down, out hit, 100f, obstacleLayerMask))
+        //{
+        //    groundPos = hit.point;
+        //}
 
-        while (fallTimer < fallDuration)
-        {
-            fallTimer += Time.deltaTime;
-            transform.position = Vector3.Lerp(startPos, groundPos, fallTimer / fallDuration);
-            transform.Rotate(Vector3.right, 90f * Time.deltaTime);
-            yield return null;
-        }
+        //while (fallTimer < fallDuration)
+        //{
+        //    fallTimer += Time.deltaTime;
+        //    transform.position = Vector3.Lerp(startPos, groundPos, fallTimer / fallDuration);
+        //    transform.Rotate(Vector3.right, 90f * Time.deltaTime);
+        //    yield return null;
+        //}
 
-        yield return new WaitForSeconds(3f);
+        yield return new WaitForSeconds(5f);
 
-        float fadeTimer = 0f;
-        float fadeDuration = 2f;
-        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        //float fadeTimer = 0f;
+        //float fadeDuration = 2f;
+        //Renderer[] renderers = GetComponentsInChildren<Renderer>();
 
-        while (fadeTimer < fadeDuration)
-        {
-            fadeTimer += Time.deltaTime;
-            float alpha = 1f - (fadeTimer / fadeDuration);
+        //while (fadeTimer < fadeDuration)
+        //{
+        //    fadeTimer += Time.deltaTime;
+        //    float alpha = 1f - (fadeTimer / fadeDuration);
 
-            foreach (var rend in renderers)
-            {
-                if (rend.material.HasProperty("_Color"))
-                {
-                    Color c = rend.material.color;
-                    c.a = alpha;
-                    rend.material.color = c;
-                }
-            }
-            yield return null;
-        }
+        //    foreach (var rend in renderers)
+        //    {
+        //        if (rend.material.HasProperty("_Color"))
+        //        {
+        //            Color c = rend.material.color;
+        //            c.a = alpha;
+        //            rend.material.color = c;
+        //        }
+        //    }
+        //    yield return null;
+        //}
 
         currentState = BossState.Dead;
         Destroy(gameObject);
