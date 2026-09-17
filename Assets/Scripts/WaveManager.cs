@@ -350,18 +350,18 @@ public class WaveManager : MonoBehaviour
     }
 
     // Визуализация в редакторе
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.green;
-        if (spawnPoints != null)
-        {
-            foreach (var point in spawnPoints)
-            {
-                if (point != null)
-                {
-                    Gizmos.DrawWireSphere(point.position, spawnRadius);
-                }
-            }
-        }
-    }
+    //void OnDrawGizmosSelected()
+    //{
+    //    Gizmos.color = Color.green;
+    //    if (spawnPoints != null)
+    //    {
+    //        foreach (var point in spawnPoints)
+    //        {
+    //            if (point != null)
+    //            {
+    //                Gizmos.DrawWireSphere(point.position, spawnRadius);
+    //            }
+    //        }
+    //    }
+    //}
 }

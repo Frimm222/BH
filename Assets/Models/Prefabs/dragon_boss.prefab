@@ -5508,9 +5508,9 @@ MonoBehaviour:
   attackCooldown: 5
   attackDelay: 1
   waitBetweenAttacks: 5
-  fireballWeight: 0
-  groundAttackWeight: 100
-  breathWeight: 0
+  fireballWeight: 100
+  groundAttackWeight: 50
+  breathWeight: 50
   fireballPrefab: {fileID: 323288143739504967, guid: c291858f643684149b7ba30823651dd7, type: 3}
   firePoint: {fileID: 4228280374439012976}
   fireballSpeed: 50
@@ -5571,8 +5571,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a17348fa8af81e54394850fcba796d14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
-  maxHealth: 1
-  currentHealth: 1
+  maxHealth: 500
+  currentHealth: 500
   hitEffect: {fileID: 0}
   deathEffect: {fileID: 0}
   hitSound: {fileID: 0}

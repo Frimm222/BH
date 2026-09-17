@@ -154,7 +154,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5eb859d9fb81ce1429fdbeba258e8a10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyFireball
-  speed: 20
+  speed: 30
   lifetime: 15
   damage: 10
   explosionRadius: 3

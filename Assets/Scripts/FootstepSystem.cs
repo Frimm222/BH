@@ -333,10 +333,10 @@ public class FootstepSystem : MonoBehaviour
         surfaceSounds = surfaces.ToArray();
     }
 
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.green;
-        Gizmos.DrawRay(transform.position + Vector3.up * 0.5f, Vector3.down * raycastDistance);
-        Gizmos.DrawWireSphere(transform.position - Vector3.up * (raycastDistance - 0.5f), 0.2f);
-    }
+    //void OnDrawGizmosSelected()
+    //{
+    //    Gizmos.color = Color.green;
+    //    Gizmos.DrawRay(transform.position + Vector3.up * 0.5f, Vector3.down * raycastDistance);
+    //    Gizmos.DrawWireSphere(transform.position - Vector3.up * (raycastDistance - 0.5f), 0.2f);
+    //}
 }

@@ -163,8 +163,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
   enemyType: 1
   moveSpeed: 15
-  stoppingDistance: 1
-  attackRange: 5
+  stoppingDistance: 5
+  attackRange: 200
   detectionRange: 10000
   loseInterestRange: 100000
   attackDamage: 10
@@ -173,7 +173,7 @@ MonoBehaviour:
   fireballPrefab: {fileID: 323288143739504967, guid: 56788fac88f710d4ca7ab229f50d4b48, type: 3}
   firePoint: {fileID: 3646743932377441851}
   fireballSpeed: 40
-  rangedAttackRange: 100
+  rangedAttackRange: 200
   rangedAttackCooldown: 2
   rangedAttackDelay: 0.4
   rangedDamage: 0

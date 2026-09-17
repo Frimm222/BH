@@ -221,7 +221,7 @@ public class EnemyAI : MonoBehaviour
         }
 
         float attackTriggerDistance = enemyType == EnemyType.Melee ? attackRange : rangedAttackRange;
-
+        //Debug.Log($"Расстояние до игрока: {distanceToPlayer}, Дальность атаки: {attackTriggerDistance}, Враг видит игрока: {CanSeePlayer()}");
         if ((distanceToPlayer < attackTriggerDistance) && CanSeePlayer())
         {
             currentState = EnemyState.Attack;
@@ -343,7 +343,7 @@ public class EnemyAI : MonoBehaviour
         if (player == null || fireballPrefab == null) return;
 
         Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position + Vector3.up * 1.5f;
-        Vector3 targetPosition = player.position + Vector3.up * -0.5f;
+        Vector3 targetPosition = player.position + Vector3.up * -1.5f;
         shootDirection = (targetPosition - spawnPosition).normalized;
 
         GameObject fireball = Instantiate(fireballPrefab, spawnPosition, Quaternion.identity);
@@ -379,12 +379,12 @@ public class EnemyAI : MonoBehaviour
     bool CanSeePlayer()
     {
         if (player == null) return false;
-
-        Vector3 directionToPlayer = (player.position - transform.position).normalized;
+        Debug.Log($"Проверка видимости игрока: {player.name} от врага ({enemyType})");
+        Vector3 directionToPlayer = (player.position - (transform.position + Vector3.up * 8f)).normalized;
         float distance = Vector3.Distance(transform.position, player.position);
 
         RaycastHit hit;
-        Vector3 rayStart = transform.position + Vector3.up * 1f;
+        Vector3 rayStart = transform.position + Vector3.up * 6f;
 
         if (Physics.Raycast(rayStart, directionToPlayer, out hit, distance))
         {
@@ -490,33 +490,33 @@ public class EnemyAI : MonoBehaviour
         Destroy(soundObject, clip.length + 0.5f);
     }
 
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
+    //void OnDrawGizmosSelected()
+    //{
+    //    Gizmos.color = Color.yellow;
+    //    Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        if (enemyType == EnemyType.Melee)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, attackRange);
-        }
-        else
-        {
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(transform.position, rangedAttackRange);
-        }
+    //    if (enemyType == EnemyType.Melee)
+    //    {
+    //        Gizmos.color = Color.red;
+    //        Gizmos.DrawWireSphere(transform.position, attackRange);
+    //    }
+    //    else
+    //    {
+    //        Gizmos.color = Color.cyan;
+    //        Gizmos.DrawWireSphere(transform.position, rangedAttackRange);
+    //    }
 
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, loseInterestRange);
+    //    Gizmos.color = Color.blue;
+    //    Gizmos.DrawWireSphere(transform.position, loseInterestRange);
 
-        if (enemyType == EnemyType.Ranged && firePoint != null)
-        {
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawSphere(firePoint.position, 0.2f);
-        }
+    //    if (enemyType == EnemyType.Ranged && firePoint != null)
+    //    {
+    //        Gizmos.color = Color.magenta;
+    //        Gizmos.DrawSphere(firePoint.position, 0.2f);
+    //    }
 
-        // 🔥 ВИЗУАЛИЗАЦИЯ ДАЛЬНОСТИ ЗВУКА
-        Gizmos.color = new Color(0, 1, 0, 0.3f);
-        Gizmos.DrawWireSphere(transform.position, soundMaxDistance);
-    }
+    //    // 🔥 ВИЗУАЛИЗАЦИЯ ДАЛЬНОСТИ ЗВУКА
+    //    Gizmos.color = new Color(0, 1, 0, 0.3f);
+    //    Gizmos.DrawWireSphere(transform.position, soundMaxDistance);
+    //}
 }

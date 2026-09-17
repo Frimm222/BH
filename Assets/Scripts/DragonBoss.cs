@@ -1242,33 +1242,33 @@ public class DragonBoss : MonoBehaviour
                currentState == BossState.BreathAttack;
     }
 
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
+    //void OnDrawGizmosSelected()
+    //{
+    //    Gizmos.color = Color.yellow;
+    //    Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        if (flyAreaCenter != null)
-        {
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(flyAreaCenter.position, flyAreaRadius);
+    //    if (flyAreaCenter != null)
+    //    {
+    //        Gizmos.color = Color.cyan;
+    //        Gizmos.DrawWireSphere(flyAreaCenter.position, flyAreaRadius);
 
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireCube(
-                flyAreaCenter.position + Vector3.up * flyHeight,
-                new Vector3(flyAreaRadius * 2, 0.1f, flyAreaRadius * 2)
-            );
+    //        Gizmos.color = Color.green;
+    //        Gizmos.DrawWireCube(
+    //            flyAreaCenter.position + Vector3.up * flyHeight,
+    //            new Vector3(flyAreaRadius * 2, 0.1f, flyAreaRadius * 2)
+    //        );
 
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireCube(
-                flyAreaCenter.position + Vector3.up * minDistanceFromTerrain,
-                new Vector3(flyAreaRadius * 2, 0.1f, flyAreaRadius * 2)
-            );
-        }
+    //        Gizmos.color = Color.red;
+    //        Gizmos.DrawWireCube(
+    //            flyAreaCenter.position + Vector3.up * minDistanceFromTerrain,
+    //            new Vector3(flyAreaRadius * 2, 0.1f, flyAreaRadius * 2)
+    //        );
+    //    }
 
-        Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
-        Gizmos.DrawWireSphere(transform.position, groundAttackRange);
+    //    Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
+    //    Gizmos.DrawWireSphere(transform.position, groundAttackRange);
 
-        Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
-        Gizmos.DrawWireSphere(transform.position, breathRange);
-    }
+    //    Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
+    //    Gizmos.DrawWireSphere(transform.position, breathRange);
+    //}
 }

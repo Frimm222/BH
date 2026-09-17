@@ -262,16 +262,16 @@ public class ParabolicProjectile : MonoBehaviour
         Destroy(soundObject, clip.length + 0.5f);
     }
 
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(startPosition, 0.3f);
-        Gizmos.DrawWireSphere(endPosition, 0.3f);
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, explosionRadius);
+    //void OnDrawGizmosSelected()
+    //{
+    //    Gizmos.color = Color.yellow;
+    //    Gizmos.DrawWireSphere(startPosition, 0.3f);
+    //    Gizmos.DrawWireSphere(endPosition, 0.3f);
+    //    Gizmos.color = Color.red;
+    //    Gizmos.DrawWireSphere(transform.position, explosionRadius);
 
-        // Визуализация дальности звука
-        Gizmos.color = new Color(0, 1, 0, 0.2f);
-        Gizmos.DrawWireSphere(transform.position, soundMaxDistance);
-    }
+    //    // Визуализация дальности звука
+    //    Gizmos.color = new Color(0, 1, 0, 0.2f);
+    //    Gizmos.DrawWireSphere(transform.position, soundMaxDistance);
+    //}
 }
