@@ -5505,9 +5505,9 @@ MonoBehaviour:
   chaseSpeed: 50
   rotationSpeed: 20
   detectionRange: 10000
-  attackCooldown: 5
+  attackCooldown: 2
   attackDelay: 1
-  waitBetweenAttacks: 5
+  waitBetweenAttacks: 2
   fireballWeight: 100
   groundAttackWeight: 50
   breathWeight: 50
@@ -5538,7 +5538,7 @@ MonoBehaviour:
   breathApproachTimeout: 6
   breathLandingSpeed: 15
   breathRotationSpeed: 20
-  appearanceDuration: 9.9
+  appearanceDuration: 9
   appearanceEffect: {fileID: 0}
   animator: {fileID: 5907096052205874964}
   roarSound: {fileID: 8300000, guid: 5254738ba6d008a42bd6abbdf8e78958, type: 3}
